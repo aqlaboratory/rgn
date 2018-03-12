@@ -1,4 +1,4 @@
-""" Geometric network model for protein structure prediction.
+""" RGN model for protein structure prediction.
 
     In general, there is an implicit ordering of tensor dimensions that is respected throughout. It is:
 
