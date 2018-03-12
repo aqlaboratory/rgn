@@ -38,8 +38,8 @@ class Config(object):
     def _create_config(self, config):
         raise NotImplementedError('Abstract method')
 
-class GeomNetConfig(Config):
-    """Encapsulates configuration parameters for geometric network models
+class RGNConfig(Config):
+    """Encapsulates configuration parameters for RGN models
 
        Options marked with HO indicate that they're completely dependent on higher-order layers being enabled.
        Options marked with pHO indicate that their behavior is partially dependent on higher-order layers.
