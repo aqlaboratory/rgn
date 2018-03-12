@@ -14,8 +14,8 @@ from glob import glob
 from shutil import rmtree
 from pprint import pprint
 from setproctitle import setproctitle
-from geomnet_model import GeomNetModel
-from config import GeomNetConfig, RunConfig
+from rgn_model import RGNModel
+from config import RGNConfig, RunConfig
 
 # constant directory and file names
 RUNS_DIRNAME = 'runs'
@@ -244,36 +244,36 @@ def loop(args):
         dd_evaluation = '/cpu:0'
 
     # create models configuration templates
-    configs.update({'training': GeomNetConfig(args.config_file, 
-                                              {'name':                        'training',
-                                               'dataFilesGlob':               full_training_glob,
-                                               'checkpointsDirectory':        checkpoints_dir,
-                                               'logsDirectory':               logs_dir,
-                                               'fileQueueCapacity':           configs['run'].queueing['training_file_queue_capacity'],
-                                               'batchQueueCapacity':          configs['run'].queueing['training_batch_queue_capacity'],
-                                               'minAfterDequeue':             configs['run'].queueing['training_min_after_dequeue'],
-                                               'shuffle':                     configs['run'].queueing['training_shuffle'],
-                                               'secondaryNormalization':      configs['run'].loss['training_secondary_normalization'],
-                                               'tertiaryNormalization':       configs['run'].loss['training_tertiary_normalization'],
-                                               'batchDependentNormalization': configs['run'].loss['training_batch_dependent_normalization'],
-                                               'alphabetFile':                alphabet_file,
-                                               'functionsOnDevices':          fod_training,
-                                               'defaultDevice':               dd_training,
-                                               'fillGPU':                     args.fill_gpu})})
+    configs.update({'training': RGNConfig(args.config_file, 
+                                          {'name':                        'training',
+                                           'dataFilesGlob':               full_training_glob,
+                                           'checkpointsDirectory':        checkpoints_dir,
+                                           'logsDirectory':               logs_dir,
+                                           'fileQueueCapacity':           configs['run'].queueing['training_file_queue_capacity'],
+                                           'batchQueueCapacity':          configs['run'].queueing['training_batch_queue_capacity'],
+                                           'minAfterDequeue':             configs['run'].queueing['training_min_after_dequeue'],
+                                           'shuffle':                     configs['run'].queueing['training_shuffle'],
+                                           'secondaryNormalization':      configs['run'].loss['training_secondary_normalization'],
+                                           'tertiaryNormalization':       configs['run'].loss['training_tertiary_normalization'],
+                                           'batchDependentNormalization': configs['run'].loss['training_batch_dependent_normalization'],
+                                           'alphabetFile':                alphabet_file,
+                                           'functionsOnDevices':          fod_training,
+                                           'defaultDevice':               dd_training,
+                                           'fillGPU':                     args.fill_gpu})})
 
-    configs.update({'evaluation': GeomNetConfig(args.config_file, 
-                                                {'fileQueueCapacity':           configs['run'].queueing['evaluation_file_queue_capacity'],
-                                                 'batchQueueCapacity':          configs['run'].queueing['evaluation_batch_queue_capacity'],
-                                                 'minAfterDequeue':             configs['run'].queueing['evaluation_min_after_dequeue'],
-                                                 'shuffle':                     configs['run'].queueing['evaluation_shuffle'],
-                                                 'secondaryNormalization':      configs['run'].loss['evaluation_secondary_normalization'],
-                                                 'tertiaryNormalization':       configs['run'].loss['evaluation_tertiary_normalization'],
-                                                 'batchDependentNormalization': configs['run'].loss['evaluation_batch_dependent_normalization'],
-                                                 'alphabetFile':                alphabet_file,
-                                                 'functionsOnDevices':          fod_evaluation,
-                                                 'defaultDevice':               dd_evaluation,
-                                                 'numEpochs':                   eval_num_epochs,
-                                                 'bucketBoundaries':            None})})
+    configs.update({'evaluation': RGNConfig(args.config_file, 
+                                            {'fileQueueCapacity':           configs['run'].queueing['evaluation_file_queue_capacity'],
+                                             'batchQueueCapacity':          configs['run'].queueing['evaluation_batch_queue_capacity'],
+                                             'minAfterDequeue':             configs['run'].queueing['evaluation_min_after_dequeue'],
+                                             'shuffle':                     configs['run'].queueing['evaluation_shuffle'],
+                                             'secondaryNormalization':      configs['run'].loss['evaluation_secondary_normalization'],
+                                             'tertiaryNormalization':       configs['run'].loss['evaluation_tertiary_normalization'],
+                                             'batchDependentNormalization': configs['run'].loss['evaluation_batch_dependent_normalization'],
+                                             'alphabetFile':                alphabet_file,
+                                             'functionsOnDevices':          fod_evaluation,
+                                             'defaultDevice':               dd_evaluation,
+                                             'numEpochs':                   eval_num_epochs,
+                                             'bucketBoundaries':            None})})
 
     # Override included evaluation models with list from command-line if specified (assumes none are included and then includes ones that are specified)
     if args.evaluation_model:
@@ -302,7 +302,7 @@ def loop(args):
 
     # create training model
     models = {}
-    models.update({'training': GeomNetModel('training', configs['training'])})
+    models.update({'training': RGNModel('training', configs['training'])})
     print('*** training configuration ***')
     pprint(configs['training'].__dict__)
 
@@ -313,7 +313,7 @@ def loop(args):
         configs['eval_wt_train'].io['data_files_glob'] = sample_training_glob
         configs['eval_wt_train'].optimization['batch_size'] = training_batch_size
         configs['eval_wt_train'].queueing['num_evaluation_invocations'] = training_invocations
-        models.update({'eval_wt_train': GeomNetModel('evaluation', configs['eval_wt_train'])})
+        models.update({'eval_wt_train': RGNModel('evaluation', configs['eval_wt_train'])})
         print('\n\n\n*** weighted training evaluation configuration ***')
         pprint(configs['eval_wt_train'].__dict__)
 
@@ -326,7 +326,7 @@ def loop(args):
         configs['eval_wt_val'].queueing['num_evaluation_invocations'] = validation_invocations
         if configs['run'].optimization['validation_reference'] == 'weighted': 
             configs['eval_wt_val'].curriculum['update_loss_history'] = True
-        models.update({'eval_wt_val': GeomNetModel('evaluation', configs['eval_wt_val'])})
+        models.update({'eval_wt_val': RGNModel('evaluation', configs['eval_wt_val'])})
         print('\n\n\n*** weighted validation evaluation configuration ***')
         pprint(configs['eval_wt_val'].__dict__)
 
@@ -337,7 +337,7 @@ def loop(args):
         configs['eval_wt_test'].io['data_files_glob'] = testing_glob
         configs['eval_wt_test'].optimization['batch_size'] = testing_batch_size
         configs['eval_wt_test'].queueing['num_evaluation_invocations'] = testing_invocations
-        models.update({'eval_wt_test': GeomNetModel('evaluation', configs['eval_wt_test'])})
+        models.update({'eval_wt_test': RGNModel('evaluation', configs['eval_wt_test'])})
         print('\n\n\n*** weighted testing evaluation configuration ***')
         pprint(configs['eval_wt_test'].__dict__)
 
@@ -352,7 +352,7 @@ def loop(args):
             configs['eval_unwt_train'].queueing['num_evaluation_invocations'] = training_invocations
             configs['eval_unwt_train'].curriculum['mode'] = None
             configs['eval_unwt_train'].curriculum['behavior'] = None
-            models.update({'eval_unwt_train': GeomNetModel('evaluation', configs['eval_unwt_train'])})
+            models.update({'eval_unwt_train': RGNModel('evaluation', configs['eval_unwt_train'])})
         
         # create unweighted validation evaluation model (conditional)
         if configs['run'].evaluation['include_unweighted_validation']:
@@ -365,7 +365,7 @@ def loop(args):
             configs['eval_unwt_val'].curriculum['behavior'] = None
             if configs['run'].optimization['validation_reference'] == 'unweighted': 
                 configs['eval_unwt_val'].curriculum['update_loss_history'] = True
-            models.update({'eval_unwt_val': GeomNetModel('evaluation', configs['eval_unwt_val'])})
+            models.update({'eval_unwt_val': RGNModel('evaluation', configs['eval_unwt_val'])})
 
         # create unweighted testing evaluation model (conditional)
         if configs['run'].evaluation['include_unweighted_testing']:
@@ -376,7 +376,7 @@ def loop(args):
             configs['eval_unwt_test'].queueing['num_evaluation_invocations'] = testing_invocations
             configs['eval_unwt_test'].curriculum['mode'] = None
             configs['eval_unwt_test'].curriculum['behavior'] = None
-            models.update({'eval_unwt_test': GeomNetModel('evaluation', configs['eval_unwt_test'])})
+            models.update({'eval_unwt_test': RGNModel('evaluation', configs['eval_unwt_test'])})
 
     # start head model and related prep
     stdout_err_file_handle.flush()
