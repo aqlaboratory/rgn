@@ -1,0 +1,36 @@
+# model configuration
+platform TensorFlow
+recurrentSize [1000]
+recurrentUnit LSTM
+numEdgeResidues 0
+numEvoEntries 21
+optimiser adam
+batchSize 32
+learnRate 0.001
+beta1 0.95
+beta2 0.99
+gradientThreshold 5.
+maxSeqLength 700
+numEpochs 100000
+randSeed 1
+recurrentInit {'base':{'range':0.01,'dist':'uniform'},'bias':{'range':0,'dist':'uniform'}}
+recurrentOutProjInit {'base':{'range':0.01,'dist':'uniform'},'bias':{'range':0,'dist':'uniform'}}
+
+# run configuration
+datasetName CASP11
+runName 1
+fullTrainingGlob [!a-z]*
+sampleValidationGlob 1
+evaluationSubGroups ['10','20','30','40','50','70','90']
+detailedLogs False
+evaluationFrequency 1000
+predictionFrequency 100000
+checkpointFrequency 100000
+numValidationSamples 32
+includeWeightedTraining False
+includeWeightedValidation True
+includeUnweightedTraining False
+includeUnweightedValidation False
+includeDiagnostics True
+trainingTertiaryNormalization first
+evaluationTertiaryNormalization first
