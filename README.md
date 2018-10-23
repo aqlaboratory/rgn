@@ -4,7 +4,7 @@ This is the reference (TensorFlow) implementation of recurrent geometric network
 ## Usage
 The [`protling.py`](https://github.com/aqlaboratory/rgn/blob/master/model/protling.py) script facilities training of and prediction using RGN models. Below are typical use cases. The script also accepts a number of command-line options whose functionality can be queried using the `--help` option.
 
-### Train a new model or continue training an existing model
+#### Train a new model or continue training an existing model
 RGN models are described using a configuration file that controls hyperparameters and architectural choices. For a list of available options and their descriptions, see its [documentation](https://github.com/aqlaboratory/rgn/blob/master/CONFIG.md). Once a configuration file has been created, along with a suitable dataset (download a ready-made [ProteinNet](https://github.com/aqlaboratory/proteinnet) data set or create a new one from scratch using the [`convert_to_tfrecord.py`](https://github.com/aqlaboratory/rgn/blob/master/model/convert_to_tfrecord.py) script), the following directory structure must be created:
 
 ```
@@ -24,7 +24,7 @@ Download a pre-trained model for an example of a correctly defined directory str
 
 To resume training an existing model, run the command above for a previously trained model with saved checkpoints.
 
-### Predict new structures using a trained model
+#### Predict new structures using a trained model
 To predict the structure of a new protein using an existing model with a saved checkpoint, call:
 
 ```
