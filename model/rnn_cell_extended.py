@@ -13,6 +13,9 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops.rnn_cell import RNNCell, LSTMStateTuple
 
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
 
 class ZoneoutWrapper(RNNCell):
   """Operator adding zoneout to hidden state and memory of the given cell."""
