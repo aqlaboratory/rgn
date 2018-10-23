@@ -1,3 +1,7 @@
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
+
 from copy import deepcopy
 from glob import glob
 from ast import literal_eval
@@ -8,7 +12,7 @@ import tensorflow as tf
 import time
 import os
 
-from rgn_model import RGNModel
+from model import RGNModel
 from config import RGNConfig
 
 
@@ -32,15 +36,17 @@ num_cpus = 1
 rand_seed = 1
 use_gpu = False
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 c_train_template = RGNConfig(config={'checkpointsDirectory':  checkpoints_dir,
-                                         'logModelSummaries':     False,
-                                         'recurrentSize':         [state_size],
-                                         'batchSize':             train_batch_size,
-                                         'maxSeqLength':          max_seq_length,
-                                         'minAfterDequeue':       20,
-                                         'randSeed':              rand_seed,
-                                         'numCPUs':               num_cpus,
-                                         'shuffle':               False})
+                                     'logModelSummaries':     False,
+                                     'recurrentSize':         [state_size],
+                                     'batchSize':             train_batch_size,
+                                     'maxSeqLength':          max_seq_length,
+                                     'minAfterDequeue':       20,
+                                     'randSeed':              rand_seed,
+                                     'numCPUs':               num_cpus,
+                                     'shuffle':               False})
 c_train_template.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
 
 c_eval_template = deepcopy(c_train_template)
@@ -59,7 +65,7 @@ w_template = {'rnn/lstm_cell/kernel':     (npr.rand(input_size + state_size, sta
 
 
 # Helper functions
-def assign_weights(session, weight_dict, scope='geomnet'):
+def assign_weights(session, weight_dict, scope='RGN'):
     """ Assigns variables passed weights
 
         Args:
@@ -73,7 +79,7 @@ def assign_weights(session, weight_dict, scope='geomnet'):
             assignments.append(var.assign(val.astype('float32')))
         session.run(assignments)
 
-def get_node_ops(nodes, scope='geomnet'):
+def get_node_ops(nodes, scope='RGN'):
     """ Returns handles to ops (values) of nodes by name that can be evaluated by sess.run() 
 
         Args:
@@ -84,7 +90,7 @@ def get_node_ops(nodes, scope='geomnet'):
 
     return [g.get_operation_by_name(scope + '/' + node).outputs[0] for node in nodes]
 
-def get_var_ops(vars_, scope='geomnet'):
+def get_var_ops(vars_, scope='RGN'):
     """ Returns handles to ops (values) of variables by name that can be evaluated by sess.run() 
 
         Args:
@@ -144,7 +150,7 @@ class CanonicalTest(tf.test.TestCase):
 
         return m_train, m_evals
 
-    def _runModel(self, sess, iteration, m_train, m_evals, weight_dict, node_dict, variable_dict, rtol, atol, restart_every_iteration, scope='geomnet'):
+    def _runModel(self, sess, iteration, m_train, m_evals, weight_dict, node_dict, variable_dict, rtol, atol, restart_every_iteration, scope='RGN'):
         # fetch nodes and expected values
         nodes = node_dict.keys()
         vars_ = variable_dict.keys()
@@ -177,7 +183,7 @@ class CanonicalTest(tf.test.TestCase):
         m_train.train(sess)
 
     def _testCore(self, c_train, c_evals, weight_dict=None, node_dict={}, variable_dict={}, use_gpu=False, 
-                  rtol=1e-2, atol=1e-2, restart_every_iteration=False, scope='geomnet'):
+                  rtol=1e-2, atol=1e-2, restart_every_iteration=False, scope='RGN'):
         """ Canonical test that checks any node/variable(s) based on an evaluation model coupled with a training model.
 
             Runs training for as many iterations given minus 1 (first set is tested before training.)
@@ -671,138 +677,6 @@ class CanonicalTest(tf.test.TestCase):
                                    [[2440.91351196,  1830.81197137,  2213.40907455,  2057.41630536,  3133.57369254,  2549.54558376,  2214.28480715,  1403.15517294,  1246.06894865,  1818.3245171 ,  2509.59949493,  2916.92699303,  2468.07727632,  2116.39010144,   798.8566617 ,  2126.8152878 ,  3100.67760812,  2258.05503026,  1922.28163659,  1627.05422116,  1044.91231739,  1682.08574637,  2525.50315609,  1778.3184391 ,  920.19946215,   653.65148693]],
                                    [[10597.64420766,   9597.03482145,   9808.38092234,   9405.94848818,  13033.98673639,  11498.18007662,  10229.14529953,   6298.46736627,   5894.99329773,   8093.37394682,  11607.18789949,  12458.61272031,  10918.9755659 ,   9202.1783646 ,   4333.69246952,   9837.59991849,  12901.53876542,   9761.04679194,   8508.599909  ,   7675.38099937,   5607.59225643,   8282.26513762,  10877.37931377,   8188.67657225,   8748.9487059 ,   3037.24076702]]]})
 
-    def testSecondaryZerothOrderLoss(self):
-        # values sourced by explicitly computation using numpy. note that these numbers implicitly test that the secondary structure entries are
-        # being correctly read because the numpy computations were explicitly tested against the known original secondary structures by manual
-        # inspection.
-
-        # due to the very high variabiilty in the gradient computations across hardware platforms for this objective, I am not able to use a single
-        # set of numbers reliably for different platforms. As a result I am _not_ testing training behavior below, only the correctness of the 
-        # forward computation. Truthfully I don't have a way of testing backpropagation anyway, as for the tertiary case I could compare against
-        # autograd, but here I don't have anything to compare to. So backprop for the secondary loss is not being tested.
-
-        output_size = 8
-
-        c_train = deepcopy(c_train_template)
-        c_train.loss['secondary_weight'] = 1.0
-        c_train.loss['tertiary_weight'] = 0.0
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.loss['secondary_weight'] = 1.0
-        c_eval.loss['tertiary_weight'] = 0.0
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-             'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 5,
-             'linear_dssps/weights':   (npr.rand(state_size, output_size) - 0.5) * 5,
-             'linear_dssps/biases':    ((npr.rand(output_size) - 0.5) * 0.05)}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w,
-                       {'all/loss': [[3.7211139]],
-                        'secondary_accuracy': [[0.085174807792468651]],
-                        'matches': [[[0.08536585,  0.01282051,  0.01298701,  0.06756757,  0.05050505,  0.        ,  0.03703704,  0.03921569,  0.16326531,  0.078125  ,  0.08791209,  0.09473684,  0.09411765,  0.08333333,  0.28947368,  0.05128205,  0.02040816,  0.06578947,  0.10447761,  0.06451613,  0.20833333,  0.02985075,  0.13095238,  0.09230769,  0.06097561,  0.18918919]]],
-                        'secondary_cross_entropy': [[[3.80301833,  3.61124015,  4.18530178,  3.996521  ,  4.42984056,  3.6270256 ,  4.12705183,  4.77357292,  2.79511452,  3.18289399,  3.14086843,  3.53480864,  3.34672236,  3.93073535,  3.09554267,  3.81505728,  4.17066813,  4.43450594,  3.91852617,  3.84228849,  3.35169601,  3.79132056,  3.39914513,  3.42950892,  4.16797876,  2.84801555]]]})
-
-    def testSecondaryFirstOrderLoss(self):
-        # similar to other secondary loss tests
-
-        output_size = 8
-
-        c_train = deepcopy(c_train_template)
-        c_train.loss['secondary_weight'] = 1.0
-        c_train.loss['tertiary_weight'] = 0.0
-        c_train.loss['secondary_normalization'] = 'first'
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.loss['secondary_weight'] = 1.0
-        c_eval.loss['tertiary_weight'] = 0.0
-        c_eval.loss['secondary_normalization'] = 'first'
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-             'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 5,
-             'linear_dssps/weights':   (npr.rand(state_size, output_size) - 0.5) * 5,
-             'linear_dssps/biases':    ((npr.rand(output_size) - 0.5) * 0.05)}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w,
-                       {'all/loss': [[3.7652137]],
-                        'secondary_accuracy': [[0.075132275132275148]]})
-
-    def testSecondarySecondOrderLoss(self):
-        # similar to other secondary loss tests
-
-        output_size = 8
-
-        c_train = deepcopy(c_train_template)
-        c_train.loss['secondary_weight'] = 1.0
-        c_train.loss['tertiary_weight'] = 0.0
-        c_train.loss['secondary_normalization'] = 'second'
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.loss['secondary_weight'] = 1.0
-        c_eval.loss['tertiary_weight'] = 0.0
-        c_eval.loss['secondary_normalization'] = 'second'
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-             'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 5,
-             'linear_dssps/weights':   (npr.rand(state_size, output_size) - 0.5) * 5,
-             'linear_dssps/biases':    ((npr.rand(output_size) - 0.5) * 0.05)}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w,
-                       {'all/loss': [[3.7934145842369027]],
-                        'secondary_accuracy': [[0.068696418332097942]]})
-
-    def testSecondaryTertiaryLossMixture(self):
-        # similar to other secondary loss tests. I'm changing the default normalization below to also test a mixture of that.
-
-        secondary_output_size = 8
-        tertiary_output_size = 3
-        secondary_weight = 0.995
-        tertiary_weight = 0.005
-
-        c_train = deepcopy(c_train_template)
-        c_train.loss['secondary_weight'] = secondary_weight
-        c_train.loss['tertiary_weight'] = tertiary_weight
-        c_train.loss['secondary_normalization'] = 'first'
-        c_train.loss['tertiary_normalization'] = 'second'
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.loss['secondary_weight'] = secondary_weight
-        c_eval.loss['tertiary_weight'] = tertiary_weight
-        c_eval.loss['secondary_normalization'] = 'first'
-        c_eval.loss['tertiary_normalization'] = 'second'
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':    (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-             'rnn/lstm_cell/bias':     (npr.rand(state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_f_diag':   (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_i_diag':   (npr.rand(state_size) - 0.5) * 5,
-             'rnn/lstm_cell/w_o_diag':   (npr.rand(state_size) - 0.5) * 5,
-             'linear_dssps/weights':     (npr.rand(state_size, secondary_output_size) - 0.5) * 5,
-             'linear_dssps/biases':      ((npr.rand(secondary_output_size) - 0.5) * 0.05),
-             'linear_dihedrals/weights': (npr.rand(state_size, tertiary_output_size) - 0.5) * 5,
-             'linear_dihedrals/biases':  ((npr.rand(tertiary_output_size) - 0.5) * 0.05)}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w,
-                       {'all/loss': [[9.294108566045761]],
-                        'secondary_loss': [[3.7652142]],
-                        'tertiary_loss': [[1109.5441]],
-                        'secondary_accuracy': [[0.075132281]]})
-
     def testHigherOrderBidirectionalMultilayers(self):
         # the numbers below are not based on an independent reference implementation, just the initial values I got for this test.
         # their primary purpose is to serve as a check for unintended changes in future releases of TF or this code base.
@@ -1059,173 +933,6 @@ class CanonicalTest(tf.test.TestCase):
 
         # values sourced from autograd
         self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[1074.5903], [1161.7908], [8912.2383], [1167.9236], [7854.7287]]})
-
-    def testHigherOrderBidirectionalMultilayersWithAlphabetizedDihedralsAndDSSPsInBetweenSingleAlphabet(self):
-        # the numbers below are not based on an independent reference implementation, just the initial values I got for this test.
-        # their primary purpose is to serve as a check for unintended changes in future releases of TF or this code base.
-
-        alphabet_size = 7
-        dssp_size = 8
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['recurrent_layer_size'] = [state_size, state_size]
-        c_train.architecture['tertiary_output'] = 'linear_alphabet'
-        c_train.architecture['alphabet_size'] = alphabet_size
-        c_train.architecture['bidirectional'] = True
-        c_train.architecture['higher_order_layers'] = True
-        c_train.architecture['include_dihedrals_between_layers'] = True
-        c_train.architecture['include_dssps_between_layers'] = True
-
-        c_eval_wt_val = deepcopy(c_train)
-        c_eval_wt_val.io['data_files'] = c_eval_template.io['data_files']
-        c_eval_wt_val.optimization['batch_size'] = c_eval_template.optimization['batch_size']
-
-        npr.seed(1)
-        w = {'layer0/bidirectional_rnn/fw/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'layer0/bidirectional_rnn/bw/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'layer0/linear_dssps/weights':                    (npr.rand(state_size * 2, dssp_size) - 0.5) * 0.05,
-             'layer0/linear_dssps/biases':                     ((npr.rand(dssp_size) - 0.5) * 0.05) + 0.2,
-               
-             'layer0/linear_dihedrals/weights':                (npr.rand(state_size * 2, alphabet_size) - 0.5) * 0.05,
-             'layer0/linear_dihedrals/biases':                 ((npr.rand(alphabet_size) - 0.5) * 0.05) + 0.2,
-               
-             'layer1/bidirectional_rnn/fw/lstm_cell/kernel':  (npr.rand(((2 * state_size) + output_size + dssp_size) + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/fw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer1/bidirectional_rnn/fw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/fw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/fw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'layer1/bidirectional_rnn/bw/lstm_cell/kernel':  (npr.rand(((2 * state_size) + output_size + dssp_size) + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/bw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer1/bidirectional_rnn/bw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/bw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer1/bidirectional_rnn/bw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-               
-             'linear_dihedrals/weights':                       (npr.rand(state_size * 2, alphabet_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':                        ((npr.rand(alphabet_size) - 0.5) * 0.05) + 0.2,
-               
-             'alphabet':                                       (npr.rand(alphabet_size, output_size) - 0.5) * 2 * np.pi}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[6332.0786], [946.82264], [1012.2718], [4397.0528], [1159.8952]]})
-
-    def testInputDropout(self):
-        # test sometimes fails, likely due to a source of randomness I have not yet managed to control (I've controlled most sources)
-        # interestingly jupyter-based tests seem perfectly stable, so can always test there
-        # curiously, the deviations only begin at the fourth time step and after.
-        c_train = deepcopy(c_train_template)
-        c_train.regularization['recurrent_input_keep_probability'] = 0.2
-        c_train.initialization['dropout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.regularization['recurrent_input_keep_probability'] = 0.2
-        c_eval.initialization['dropout_seed'] = 1
-
-        self._testCore(c_train, [c_eval], w_template, {'all/loss': [[1117.3123], [1520.6514], [8910.6186], [2086.8227], [2829.5177]]},
-                       restart_every_iteration=False)
-
-    def testOutputDropout(self):
-        # test sometimes fails, likely due to a source of randomness I have not yet managed to control (I've controlled most sources)
-        # interestingly jupyter-based tests seem perfectly stable, so can always test there
-        # curiously, the deviations only begin at the fourth time step and after.
-        c_train = deepcopy(c_train_template)
-        c_train.regularization['recurrent_output_keep_probability'] = 0.05
-        c_train.initialization['dropout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.regularization['recurrent_output_keep_probability'] = 0.05
-        c_eval.initialization['dropout_seed'] = 1
-
-        self._testCore(c_train, [c_eval], w_template, {'all/loss': [[1117.3123], [1566.7766], [8974.5575], [1058.696], [7878.4348]]},
-                       restart_every_iteration=False)
-
-    def testHiddenStateZoneout(self):
-        # test sometimes fails, likely due to a source of randomness I have not yet managed to control (I've controlled most sources)
-        # interestingly jupyter-based tests seem perfectly stable, so can always test there
-        # curiously, the deviations only begin at the fourth time step and after.
-        c_train = deepcopy(c_train_template)
-        c_train.regularization['recurrent_state_zonein_probability'] = 0.1
-        c_train.initialization['zoneout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.regularization['recurrent_state_zonein_probability'] = 0.1
-        c_eval.initialization['zoneout_seed'] = 1
-
-        self._testCore(c_train, [c_eval], w_template, {'all/loss': [[1117.7292], [1537.2609], [8952.9068], [5927.1931], [3645.1519]]},
-                       restart_every_iteration=False)
-
-    def testMemoryCellZoneout(self):
-        # test sometimes fails, likely due to a source of randomness I have not yet managed to control (I've controlled most sources)
-        # interestingly jupyter-based tests seem perfectly stable, so can always test there
-        # curiously, the deviations only begin at the fourth time step and after.
-        c_train = deepcopy(c_train_template)
-        c_train.regularization['recurrent_memory_zonein_probability'] = 0.3
-        c_train.initialization['zoneout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.regularization['recurrent_memory_zonein_probability'] = 0.3
-        c_eval.initialization['zoneout_seed'] = 1
-
-        self._testCore(c_train, [c_eval], w_template, {'all/loss': [[1117.6599], [1541.2391], [8954.0314], [5845.6024], [4891.0435]]},
-                       restart_every_iteration=False)
-
-    def testAllDropoutsAndZoneouts(self):
-        c_train = deepcopy(c_train_template)
-        c_train.regularization['recurrent_input_keep_probability'] = 0.4
-        c_train.regularization['recurrent_output_keep_probability'] = 0.2
-        c_train.regularization['recurrent_state_zonein_probability'] = 0.1
-        c_train.regularization['recurrent_memory_zonein_probability'] = 0.3
-        c_train.initialization['dropout_seed'] = 1
-        c_train.initialization['zoneout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.regularization['recurrent_input_keep_probability'] = 0.4
-        c_eval.regularization['recurrent_output_keep_probability'] = 0.2
-        c_eval.regularization['recurrent_state_zonein_probability'] = 0.1
-        c_eval.regularization['recurrent_memory_zonein_probability'] = 0.3
-        c_eval.initialization['dropout_seed'] = 1
-        c_eval.initialization['zoneout_seed'] = 1
-
-        self._testCore(c_train, [c_eval], w_template, {'all/loss': [[1118.2085], [1563.0886], [8997.4442], [7165.374], [2436.6022]]},
-                       restart_every_iteration=False)
-
-    def testAlphabetDropout(self):
-        alphabet_size = 100
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['tertiary_output'] = 'linear_alphabet'
-        c_train.architecture['alphabet_size'] = alphabet_size
-        c_train.regularization['alphabet_keep_probability'] = 0.5
-        c_train.initialization['dropout_seed'] = 1
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.architecture['tertiary_output'] = 'linear_alphabet'
-        c_eval.architecture['alphabet_size'] = alphabet_size
-        c_eval.regularization['alphabet_keep_probability'] = 0.5
-        c_eval.initialization['dropout_seed'] = 1
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':    (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':     (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'linear_dihedrals/weights': (npr.rand(state_size, alphabet_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(alphabet_size) - 0.5) * 0.05) + 0.2,
-             'alphabet':                 (npr.rand(alphabet_size, output_size) - 0.5) * 2 * np.pi}
-
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[4733.4808], [4024.802], [1440.3541], [1248.7039], [2338.2133]]},
-                       restart_every_iteration=False)
 
     def testAlphabetTemperature(self):
         alphabet_size = 7
@@ -1725,110 +1432,6 @@ class CanonicalTest(tf.test.TestCase):
         # values sourced from autograd
         self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[1168.4316], [4341.5478], [1000.3198], [9159.6611], [9078.9536]]})
 
-    def testBatchNormalizedAlphabet(self):
-        alphabet_size = 7
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['tertiary_output'] = 'linear_alphabet'
-        c_train.architecture['alphabet_size'] = alphabet_size
-        c_train.regularization['alphabet_normalization'] = 'batch_normalization'
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.architecture['tertiary_output'] = 'linear_alphabet'
-        c_eval.architecture['alphabet_size'] = alphabet_size
-        c_eval.regularization['alphabet_normalization'] = 'batch_normalization'
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':         (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':           (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag':    (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag':    (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag':    (npr.rand(state_size) - 0.5) * 0.05,
-             'linear_dihedrals/weights': (npr.rand(state_size, alphabet_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(alphabet_size) - 0.5) * 0.05) + 0.2,
-             'alphabet':                 (npr.rand(alphabet_size, output_size) - 0.5) * 2 * np.pi}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[5749.8821], [1298.7108], [5864.8586], [956.45924], [1383.3976]]})
-
-    def testRecurrentAttention(self):
-        # CURRENTLY DEPRECATED #
-        # the numbers below are not based on an independent reference implementation, just the initial values I got for this test.
-        # their primary purpose is to serve as a check for unintended changes in future releases of TF or this code base.
-
-        attn_mlp_size = 5
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['recurrent_attention'] = True
-        c_train.architecture['recurrent_attention_mlp_size'] = attn_mlp_size
-
-        c_eval_wt_val = deepcopy(c_train)
-        c_eval_wt_val.io['data_files']                  = c_eval_template.io['data_files']
-        c_eval_wt_val.optimization['batch_size']        = c_eval_template.optimization['batch_size']
-
-        npr.seed(1)
-        w = {'RNN/AttentionCellWrapper/LSTMCell/W_0':      (npr.rand(input_size + state_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/B':        (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'RNN/AttentionCellWrapper/LSTMCell/W_F_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/W_I_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/W_O_diag': (npr.rand(state_size) - 0.5) * 0.05,
-            
-             'RNN/AttentionCellWrapper/Attention/AttnW':                    (npr.rand(1, 1, state_size, attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/AttnV':                    (npr.rand(attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/Linear/Matrix':            (npr.rand(state_size * 2, attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/Linear/Bias':              (npr.rand(attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/AttnOutputProjection/Linear/Matrix': (npr.rand(state_size * 2, state_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/AttnOutputProjection/Linear/Bias':   (npr.rand(state_size) - 0.5) * 0.05,
-
-             'linear_dihedrals/weights': (npr.rand(state_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[1177.7372], [3263.3957], [8781.8253], [1688.1208], [2544.2482]]})
-
-    def testRecurrentAttentionWithInputProjAndOtherOptions(self):
-        # CURRENTLY DEPRECATED #
-        # the numbers below are not based on an independent reference implementation, just the initial values I got for this test.
-        # their primary purpose is to serve as a check for unintended changes in future releases of TF or this code base.
-
-        attn_mlp_size = 5
-        attn_in_proj_size = 80
-        attn_out_proj_size = 30
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['recurrent_attention'] = True
-        c_train.architecture['recurrent_attention_mlp_size'] = attn_mlp_size
-        c_train.architecture['recurrent_attention_length'] = 40
-        c_train.architecture['recurrent_attention_input_proj'] = True
-        c_train.architecture['recurrent_attention_input_proj_size'] = attn_in_proj_size
-        c_train.architecture['recurrent_attention_output_proj_size'] = attn_out_proj_size
-
-        c_eval_wt_val = deepcopy(c_train)
-        c_eval_wt_val.io['data_files']                  = c_eval_template.io['data_files']
-        c_eval_wt_val.optimization['batch_size']        = c_eval_template.optimization['batch_size']
-
-        npr.seed(1)
-        w = {'RNN/AttentionCellWrapper/LSTMCell/W_0':      (npr.rand(attn_in_proj_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/B':        (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'RNN/AttentionCellWrapper/LSTMCell/W_F_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/W_I_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/LSTMCell/W_O_diag': (npr.rand(state_size) - 0.5) * 0.05,
-            
-             'RNN/AttentionCellWrapper/AttnInputProjection/Linear/Matrix':  (npr.rand(input_size + attn_out_proj_size, attn_in_proj_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/AttnInputProjection/Linear/Bias':    (npr.rand(attn_in_proj_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/AttnW':                    (npr.rand(1, 1, attn_out_proj_size, attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/AttnV':                    (npr.rand(attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/Linear/Matrix':            (npr.rand(state_size * 2, attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/Attention/Linear/Bias':              (npr.rand(attn_mlp_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/AttnOutputProjection/Linear/Matrix': (npr.rand(state_size + attn_out_proj_size, attn_out_proj_size) - 0.5) * 0.05,
-             'RNN/AttentionCellWrapper/AttnOutputProjection/Linear/Bias':   (npr.rand(attn_out_proj_size) - 0.5) * 0.05,
-
-             'linear_dihedrals/weights':          (npr.rand(attn_out_proj_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':           ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[1126.1189], [1772.8626], [9009.5703], [7205.6427]]})
-
     def testNonlinearOutputProjection(self):
         nonlinear_out_proj_size = 8
 
@@ -1853,78 +1456,6 @@ class CanonicalTest(tf.test.TestCase):
 
         # values sourced from autograd
         self._testCore(c_train, [c_eval], w, {'all/loss': [[1161.2987], [4173.3604], [1835.3266], [9014.5103], [6143.861]]})
-
-    def testReluBatchNormalizedNonlinearOutputProjection(self):
-        nonlinear_out_proj_size = 8
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['recurrent_nonlinear_out_proj_size'] = [nonlinear_out_proj_size]
-        c_train.architecture['recurrent_nonlinear_out_proj_function'] = 'relu'
-        c_train.regularization['recurrent_nonlinear_out_proj_normalization'] = 'batch_normalization'
-
-        c_eval = deepcopy(c_eval_template)
-        c_eval.architecture['recurrent_nonlinear_out_proj_size'] = [nonlinear_out_proj_size]
-        c_eval.architecture['recurrent_nonlinear_out_proj_function'] = 'relu'
-        c_eval.regularization['recurrent_nonlinear_out_proj_normalization'] = 'batch_normalization'
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'nonlinear_dihedrals_0/weights': (npr.rand(state_size, nonlinear_out_proj_size) - 0.5) * 0.05,
-            
-             'linear_dihedrals/weights': (npr.rand(nonlinear_out_proj_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[1127.3972], [1778.2137], [9076.2733], [8791.98], [3247.9362]]})
-
-    def testNonRecurrentAttention(self):
-        # the numbers below are not based on an independent reference implementation, just the initial values I got for this test.
-        # their primary purpose is to serve as a check for unintended changes in future releases of TF or this code base.
-
-        alphabet_size = 7
-        attn_mlp_size = 100
-
-        c_train = deepcopy(c_train_template)
-        c_train.architecture['tertiary_output'] = 'linear_alphabet'
-        c_train.architecture['alphabet_size'] = alphabet_size
-        c_train.architecture['bidirectional'] = True
-        c_train.architecture['higher_order_layers'] = True
-        c_train.architecture['attention'] = True
-        c_train.architecture['attention_mlp_size'] = attn_mlp_size
-
-        c_eval_wt_val = deepcopy(c_train)
-        c_eval_wt_val.io['data_files']                  = c_eval_template.io['data_files']
-        c_eval_wt_val.optimization['batch_size']        = c_eval_template.optimization['batch_size']
-
-        npr.seed(1)
-        w = {'layer0/bidirectional_rnn/fw/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/fw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'layer0/bidirectional_rnn/bw/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 0.05,
-             'layer0/bidirectional_rnn/bw/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 0.05,
-
-             'layer0/attention_kernel':  (npr.rand(state_size * 2, attn_mlp_size * 2) - 0.5) * 0.05,
-             'layer0/attention_bias':    ((npr.rand(1, 1, attn_mlp_size) - 0.5) * 0.05) + 0.2,
-             'layer0/attention_linear':  ((npr.rand(1, 1, attn_mlp_size) - 0.5) * 0.05) + 0.2,
-            
-             'linear_dihedrals/weights': (npr.rand(state_size * 2 * 2, alphabet_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(alphabet_size) - 0.5) * 0.05) + 0.2,
-           
-             'alphabet':                 (npr.rand(alphabet_size, output_size) - 0.5) * 2 * np.pi}
-
-        # values sourced from autograd
-        self._testCore(c_train, [c_eval_wt_val], w, {'all/loss': [[7971.8613], [3686.3026], [1989.4875], [8595.6512], [6095.6066]]})
 
     def testResidueMasking(self):
         # values sourced from manual Mathematica comparison (for very initial evaluation step)
@@ -2090,69 +1621,6 @@ class CanonicalTest(tf.test.TestCase):
         self._testCore(c_train, [c_eval], w, {'all/loss': [[1144.789], [2778.5601], [4170.4731], [1512.8389], [4059.8572]]},
                        rtol=1e-4, atol=1e-4, use_gpu=True, restart_every_iteration=True)
 
-    def testCudnnLSTMWithInputDropout(self):
-        cudnnLSTM_state_size = 4740
-
-        train_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/training/full/'
-        eval_dir = base_dir + '/data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/validation/sample/'
-        train_files = ['1', '2', '3']
-        eval_files = ['1']
-
-        c_train = deepcopy(c_train_template)
-        c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-        c_train.io['num_evo_entries'] = 42
-        c_train.architecture['recurrent_unit'] = 'CudnnLSTM'
-        c_train.architecture['include_evolutionary'] = True
-        c_train.regularization['recurrent_input_keep_probability'] = 0.1
-        c_train.initialization['dropout_seed'] = 1
-
-        c_eval = deepcopy(c_train)
-        c_eval.io['data_files'] = [os.path.join(eval_dir, file) for file in eval_files]
-        c_eval.optimization['batch_size'] = 52
-        c_eval.queueing['min_after_dequeue'] = 1
-
-        npr.seed(1)
-        w = {'fw/cudnn_lstm/opaque_kernel': (npr.rand(cudnnLSTM_state_size) - 0.5) * 0.05,
-
-             'linear_dihedrals/weights': (npr.rand(state_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[1142.7958], [2685.5835], [4249.9783], [1289.5942], [2867.8112]]},
-                       rtol=1e-4, atol=1e-4, use_gpu=True, restart_every_iteration=True)
-
-    def testTwoLOLayeredCudnnLSTMWithInputDropout(self):
-        cudnnLSTM_state_size = 6660
-
-        train_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/training/full/'
-        eval_dir = base_dir + '/data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/validation/sample/'
-        train_files = ['1', '2', '3']
-        eval_files = ['1']
-
-        c_train = deepcopy(c_train_template)
-        c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-        c_train.io['num_evo_entries'] = 42
-        c_train.architecture['recurrent_unit'] = 'CudnnLSTM'
-        c_train.architecture['include_evolutionary'] = True
-        c_train.architecture['bidirectional'] = True
-        c_train.architecture['recurrent_layer_size'] = [state_size] * 2
-        c_train.regularization['recurrent_input_keep_probability'] = 0.1
-        c_train.initialization['dropout_seed'] = 1
-
-        c_eval = deepcopy(c_train)
-        c_eval.io['data_files'] = [os.path.join(eval_dir, file) for file in eval_files]
-        c_eval.optimization['batch_size'] = 52
-        c_eval.queueing['min_after_dequeue'] = 1
-
-        npr.seed(1)
-        w = {'fw/cudnn_lstm/opaque_kernel': (npr.rand(cudnnLSTM_state_size) - 0.5) * 0.1,
-             'bw/cudnn_lstm/opaque_kernel': (npr.rand(cudnnLSTM_state_size) - 0.5) * 0.1,
-
-             'linear_dihedrals/weights': (npr.rand(state_size * 2, output_size) - 0.5) * 0.1,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[1144.789], [2777.8263], [4170.8244], [1512.5541], [4059.3346]]},
-                       rtol=1e-4, atol=1e-4, use_gpu=True, restart_every_iteration=True)
-
     def testTwoHOLayeredBidirectionalCudnnLSTM(self):
         cudnnLSTM_0_state_size = 4740
         cudnnLSTM_1_state_size = 2820
@@ -2265,45 +1733,6 @@ class CanonicalTest(tf.test.TestCase):
                                               '70/loss':  [[7477.3926], [45244.659], [32810.721]],
                                               '90/loss':  [[7095.7344], [42928.339], [31128.69]]})
 
-    def testEvaluationSubgroupsSecondOrderLoss(self):
-        # not sourced from anywhere else. just used as a baseline for the future
-        train_files = ['1', '2', '3']
-        eval_files  = ['1']
-        train_dir = base_dir + 'data/unofficial/tfrecord/training_long_with_subgroups/'
-        eval_dir  = base_dir + 'data/unofficial/tfrecord/test_long_with_subgroups/'
-        state_size = 2
-
-        c_train = deepcopy(c_train_template)
-        c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-        c_train.io['num_evo_entries'] = 42
-        c_train.architecture['recurrent_layer_size'] = [state_size]
-        c_train.optimization['batch_size'] = 224
-        c_train.optimization['num_steps'] = 700
-        c_train.loss['tertiary_normalization'] = 'second'
-
-        c_eval = deepcopy(c_train)
-        c_eval.io['data_files'] = [os.path.join(eval_dir, file) for file in eval_files]
-        c_eval.io['evaluation_sub_groups'] = ['10', '20', '30', '40', '50', '70', '90']
-        c_eval.optimization['min_after_dequeue'] = 1
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':    (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':     (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'linear_dihedrals/weights': (npr.rand(state_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        self._testCore(c_train, [c_eval], w, {'all/loss': [[7880.9792], [29750.760], [18681.567]],
-                                              '10/loss':  [[6459.5146], [24827.776], [15461.331]],
-                                              '20/loss':  [[6471.5256], [25111.795], [15610.263]],
-                                              '30/loss':  [[6830.0896], [26415.604], [16473.335]],
-                                              '40/loss':  [[6307.8617], [24708.496], [15370.581]],
-                                              '50/loss':  [[8145.8519], [30373.419], [19137.692]],
-                                              '70/loss':  [[9246.6843], [34484.085], [21763.132]],
-                                              '90/loss':  [[9422.6669], [34687.637], [21936.301]]})
-
     def testTwoFragmentReconstruction(self):
         c_train = deepcopy(c_train_template)
         c_train.computing['num_reconstruction_fragments'] = 2
@@ -2382,95 +1811,6 @@ class CanonicalTest(tf.test.TestCase):
 
         self._testCore(c_train, [c_eval_wt_val, c_eval_unwt_val], w,
                        {'all/loss': [[1172.3326, 6072.3743], [3056.477, 19040.947], [7080.9662, 38034.351]]})
-
-    def testFixedRateLengthCurriculum(self):
-        train_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/training/full/'
-        eval_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/validation/sample/'
-        train_files = ['1', '2', '3']
-        eval_files = ['1']
-
-        state_size = 2
-        batch_size = 224
-        max_seq_length = 700
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':     (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':       (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'linear_dihedrals/weights': (npr.rand(state_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        c_train = deepcopy(c_train_template)
-        c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-        c_train.io['num_evo_entries'] = 42
-        c_train.architecture['recurrent_layer_size'] = [state_size]
-        c_train.queueing['min_after_dequeue'] = 1
-        c_train.queueing['batch_queue_capacity'] = 1
-        c_train.optimization['batch_size'] = batch_size
-        c_train.optimization['num_steps'] = max_seq_length
-        c_train.loss['tertiary_normalization'] = 'first'
-        c_train.curriculum['mode'] = 'length'
-        c_train.curriculum['behavior'] = 'fixed_rate'
-        c_train.curriculum['base'] = 100.0
-        c_train.curriculum['rate'] = 50.0
-
-        c_eval_unwt_val = deepcopy(c_train)
-        c_eval_unwt_val.io['data_files'] = [os.path.join(eval_dir, file) for file in eval_files]
-        c_eval_unwt_val.curriculum['mode'] = None
-        c_eval_unwt_val.curriculum['behavior'] = None
-
-        self._testCore(c_train, [c_eval_unwt_val], w,
-                       {'all/loss': [[6072.3743], [19040.947], [43431.729], [41647.812], [28183.826]]},
-                       {'curriculum_step': [[100.0], [150.0], [200.0], [250.0], [300.0]]})
-
-    def testLossThresholdLengthCurriculumAndHistoryUpdating(self):
-        train_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/training/full/'
-        eval_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/validation/sample/'
-        train_files = ['1', '2', '3']
-        eval_files = ['1']
-
-        state_size = 2
-        batch_size = 224
-        max_seq_length = 700
-
-        npr.seed(1)
-        w = {'rnn/lstm_cell/kernel':     (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 0.05,
-             'rnn/lstm_cell/bias':       (npr.rand(state_size * 4) - 0.5) * 0.15,
-             'rnn/lstm_cell/w_f_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_i_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'rnn/lstm_cell/w_o_diag':   (npr.rand(state_size) - 0.5) * 0.05,
-             'linear_dihedrals/weights': (npr.rand(state_size, output_size) - 0.5) * 0.05,
-             'linear_dihedrals/biases':  ((npr.rand(output_size) - 0.5) * 0.05) + 0.2}
-
-        c_train = deepcopy(c_train_template)
-        c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-        c_train.io['num_evo_entries'] = 42
-        c_train.architecture['recurrent_layer_size'] = [state_size]
-        c_train.queueing['min_after_dequeue'] = 1
-        c_train.queueing['batch_queue_capacity'] = 1
-        c_train.optimization['batch_size'] = batch_size
-        c_train.optimization['num_steps'] = max_seq_length
-        c_train.optimization['learning_rate'] = 0.0001
-        c_train.loss['tertiary_normalization'] = 'first'
-        c_train.curriculum['mode'] = 'length'
-        c_train.curriculum['behavior'] = 'loss_threshold'
-        c_train.curriculum['base'] = 100.0
-        c_train.curriculum['rate'] = 50.0
-        c_train.curriculum['threshold'] = 35.0
-        c_train.curriculum['change_num_iterations'] = 3
-
-        c_eval_unwt_val = deepcopy(c_train)
-        c_eval_unwt_val.io['data_files'] = [os.path.join(eval_dir, file) for file in eval_files]
-        c_eval_unwt_val.curriculum['mode'] = None
-        c_eval_unwt_val.curriculum['behavior'] = None
-        c_eval_unwt_val.curriculum['update_loss_history'] = True
-
-        self._testCore(c_train, [c_eval_unwt_val], w,
-                       {'all/loss': [[6072.3743], [3292.0307], [6780.2803], [2752.6196], [4200.9754]]},
-                       {'curriculum_step': [[100.0], [100.0], [150.0], [150.0], [200.0]],
-                        'curriculum_loss_history': [[[-1., -1., -1.]], [[-1., -1., 60.723743]], [[-1., 60.723743, 32.920307]], [[60.723743, 32.920307, 67.802803]], [[32.920307, 67.802803, 27.526196]]]})
 
     def testLossChangeLengthCurriculumAndHistoryUpdating(self):
         train_dir = base_dir + 'data/CASP11Thinning30TwoResidueShiftEvoUniParcBakerJackHMMERNeg10JackHMMERNeg10/training/full/'
@@ -2754,12 +2094,12 @@ class IdiosyncraticTest(tf.test.TestCase):
             
             try:
                 # check file queue size
-                fq_size = g.get_operation_by_name('geomnet/model_0/file_queue/file_queue_Size').outputs[0]
+                fq_size = g.get_operation_by_name('RGN/model_0/file_queue/file_queue_Size').outputs[0]
                 while fq_size.eval(session=sess) < c_train_template.queueing['file_queue_capacity']: time.sleep(20)
                 self.assertAllEqual(c_train_template.queueing['file_queue_capacity'], fq_size.eval(session=sess))
 
                 # check batching queue size
-                bq_size = g.get_operation_by_name('geomnet/model_0/batching_queue/padding_fifo_queue_Size').outputs[0]
+                bq_size = g.get_operation_by_name('RGN/model_0/batching_queue/padding_fifo_queue_Size').outputs[0]
                 while bq_size.eval(session=sess) < c_train_template.queueing['batch_queue_capacity']: time.sleep(20)
                 self.assertAllEqual(c_train_template.queueing['batch_queue_capacity'], bq_size.eval(session=sess))
             finally:
@@ -2778,72 +2118,11 @@ class IdiosyncraticTest(tf.test.TestCase):
 
             g = tf.get_default_graph()
             
-            ids_actual = list(g.get_operation_by_name('geomnet/model_0/ids').outputs[0].eval(session=sess))
+            ids_actual = list(g.get_operation_by_name('RGN/model_0/ids').outputs[0].eval(session=sess))
             ids_unexpected = ['2', '3', '4', '7', '21', '25', '29', '38', '39', '40', '47', '50', '51', '52', '55', '56', '60', '73', '80', '89', '90', '93', '99', '102', '105', '112', '117', '119', '120', '121', '122', '123', '124', '125', '135', '144', '145', '148', '150', '154', '155', '156', '162', '172', '173', '176', '177', '178', '180', '186', '187', '188', '191', '202', '211', '214', '218', '224', '225', '226', '227', '228', '230', '231', '232', '233', '238', '240', '245', '249', '250', '251', '252', '255', '258', '265', '267', '268', '270', '271', '272', '281', '286', '287', '293', '299', '307', '309', '314', '315', '316', '321', '329', '330', '331', '332', '333', '334', '335', '336']
             
             try:
                 self.assertAllEqual(False, ids_actual == ids_unexpected)
-            finally:
-                m_train.finish(sess, save=False, close_session=False, reset_graph=False) 
-
-    def testBucketing(self):
-        with self.test_session(use_gpu=use_gpu) as sess:
-            c_train = deepcopy(c_train_template)
-            c_train.optimization['num_steps'] = 300
-            c_train.queueing['bucket_boundaries'] = range(50, 300, 50)
-
-            m_train = RGNModel('training', c_train)
-            m_train.start([], sess, False)
-
-            g = tf.get_default_graph()
-            
-            nss_expected = [[131, 136, 106, 104, 129, 131, 132, 140, 120, 145],
-                            [78, 67, 63, 82, 62, 85, 78, 87, 68, 83],
-                            [163, 159, 153, 156, 172, 165, 150, 151, 162, 158],
-                            [108, 113, 139, 102, 119, 102, 138, 127, 134, 119],
-                            [201, 231, 247, 239, 221, 247, 205, 221, 210, 243],
-                            [162, 153, 151, 158, 170, 194, 174, 168, 153, 174],
-                            [83, 97, 80, 69, 80, 87, 88, 95, 98, 94],
-                            [298, 257, 300, 260, 295, 274, 275, 285, 289, 262],
-                            [65, 95, 84, 68, 97, 80, 99, 81, 81, 85],
-                            [129, 108, 109, 139, 115, 126, 118, 102, 121, 132],
-                            [47, 46, 40, 29, 37, 47, 32, 25, 42, 32]]
-            
-            try:
-                for ns_expected in nss_expected:
-                    ns_actual = list(g.get_operation_by_name('geomnet/model_0/num_stepss').outputs[0].eval(session=sess))
-                    self.assertAllEqual(ns_expected, ns_actual)
-            finally:
-                m_train.finish(sess, save=False, close_session=False, reset_graph=False) 
-
-    def testShuffledBucketing(self):
-        with self.test_session(use_gpu=use_gpu) as sess:
-            c_train = deepcopy(c_train_template)
-            c_train.optimization['num_steps'] = 300
-            c_train.queueing['shuffle'] = True
-            c_train.queueing['bucket_boundaries'] = range(50, 300, 50)
-
-            m_train = RGNModel('training', c_train)
-            m_train.start([], sess, False)
-
-            g = tf.get_default_graph()
-            
-            nss_unexpected = [[131, 136, 106, 104, 129, 131, 132, 140, 120, 145],
-                              [78, 67, 63, 82, 62, 85, 78, 87, 68, 83],
-                              [163, 159, 153, 156, 172, 165, 150, 151, 162, 158],
-                              [108, 113, 139, 102, 119, 102, 138, 127, 134, 119],
-                              [201, 231, 247, 239, 221, 247, 205, 221, 210, 243],
-                              [162, 153, 151, 158, 170, 194, 174, 168, 153, 174],
-                              [83, 97, 80, 69, 80, 87, 88, 95, 98, 94],
-                              [298, 257, 300, 260, 295, 274, 275, 285, 289, 262],
-                              [65, 95, 84, 68, 97, 80, 99, 81, 81, 85],
-                              [129, 108, 109, 139, 115, 126, 118, 102, 121, 132],
-                              [47, 46, 40, 29, 37, 47, 32, 25, 42, 32]]
-            
-            try:
-                for ns_unexpected in nss_unexpected:
-                    ns_actual = list(g.get_operation_by_name('geomnet/model_0/num_stepss').outputs[0].eval(session=sess))
-                    self.assertAllEqual(False, ns_unexpected == ns_actual)
             finally:
                 m_train.finish(sess, save=False, close_session=False, reset_graph=False) 
 
@@ -2898,7 +2177,7 @@ class IdiosyncraticTest(tf.test.TestCase):
 
             ids_actual = set()
             for _ in range((num_samples // batch_size) + 2):
-                ids_actual.update(g.get_operation_by_name('geomnet/model_0/ids').outputs[0].eval(session=sess))
+                ids_actual.update(g.get_operation_by_name('RGN/model_0/ids').outputs[0].eval(session=sess))
             ids_actual = sorted(map(int, list(ids_actual)))
 
             try:
@@ -2991,143 +2270,6 @@ class IdiosyncraticTest(tf.test.TestCase):
 
             finally:
                 m_train.finish(sess, save=False, close_session=False, reset_graph=False)
-
-    def testRecurrentAttentionInitializers(self):
-        # CURRENTLY DEPRECATED #
-        attn_mlp_size = 5
-        attn_in_proj_size = 80
-        attn_out_proj_size = 30
-
-        with self.test_session(use_gpu=use_gpu) as sess:    
-            c_train = RGNConfig(config={'checkpointsDirectory': checkpoints_dir,
-                                            'logModelSummaries':    False,
-                                            'recurrentSize':        [state_size],
-                                            'batchSize':            train_batch_size,
-                                            'maxSeqLength':         max_seq_length,
-                                            'randSeed':             rand_seed,
-                                            'numCPUs':              num_cpus,
-                                            'shuffle':              False,
-                                            'recurrentAttention':   True,
-                                            'recurrentAttentionMLPSize': attn_mlp_size,
-                                            'recurrentAttentionLength': 40,
-                                            'recurrentAttentionInputProj': True,
-                                            'recurrentAttentionInputProjSize': attn_in_proj_size,
-                                            'recurrentAttentionOutputProjSize': attn_out_proj_size,
-                                            'recurrentAttentionInit': {'in_proj':  {'dist': 'uniform', 'center': -10.2, 'range': 3.1}, 
-                                                                       'out_proj': {'dist': 'uniform', 'center': -1.6,  'range': 3.0}, 
-                                                                       'attn_mlp': {'dist': 'uniform', 'center': -5.6,  'range': 8.0}}})
-            c_train.io['data_files'] = [os.path.join(train_dir, file) for file in train_files]
-
-            m_train = RGNModel('training', c_train)
-            m_train.start([], sess, False)
-
-            g = tf.get_default_graph()
-
-            d = {var.name: var.eval(session=sess).flatten() for var in tf.get_collection(tf.GraphKeys.WEIGHTS)}
-            for k, v in d.iteritems():
-                if 'AttnInputProjection' in k: 
-                    self.assertAllClose(np.mean(v), -10.2,       rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.min(v),  -10.2 - 3.1, rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.max(v),  -10.2 + 3.1, rtol=5e-1, atol=5e-1)
-                elif 'AttnOutputProjection' in k: 
-                    self.assertAllClose(np.mean(v), -1.6,        rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.min(v),  -1.6 - 3,    rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.max(v),  -1.6 + 3,    rtol=5e-1, atol=5e-1)
-                elif 'Attention/' in k and 'AttnV' not in k: # skipping AttnV because there are very few weights and thus very high variance, resulting in overly sensitive tests
-                    self.assertAllClose(np.mean(v), -5.6,        rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.min(v),  -5.6 - 8,    rtol=5e-1, atol=5e-1)
-                    self.assertAllClose(np.max(v),  -5.6 + 8,    rtol=5e-1, atol=5e-1)
-
-            d = {var.name: var.eval(session=sess).flatten() for var in tf.get_collection(tf.GraphKeys.BIASES)}
-            for k, v in d.iteritems():
-                if 'AttnInputProjection' in k: 
-                    self.assertAllClose(np.mean(v), 0, rtol=0, atol=0)
-                    self.assertAllClose(np.min(v),  0, rtol=0, atol=0)
-                    self.assertAllClose(np.max(v),  0, rtol=0, atol=0)
-                elif 'AttnOutputProjection' in k: 
-                    self.assertAllClose(np.mean(v), 0, rtol=0, atol=0)
-                    self.assertAllClose(np.min(v),  0, rtol=0, atol=0)
-                    self.assertAllClose(np.max(v),  0, rtol=0, atol=0)
-                elif 'Attention/' in k: 
-                    self.assertAllClose(np.mean(v), 0, rtol=0, atol=0)
-                    self.assertAllClose(np.min(v),  0, rtol=0, atol=0)
-                    self.assertAllClose(np.max(v),  0, rtol=0, atol=0)
-
-            m_train.finish(sess, save=False, close_session=False, reset_graph=False)
-
-    def testSecondaryLossAndAccuracyEvaluation(self):
-        with self.test_session(use_gpu=use_gpu) as sess:
-            output_size = 8
-
-            c_train = deepcopy(c_train_template)
-            c_train.loss['secondary_weight'] = 1.0
-            c_train.loss['tertiary_weight'] = 0.0
-
-            c_eval = deepcopy(c_eval_template)
-            c_eval.loss['secondary_weight'] = 1.0
-            c_eval.loss['tertiary_weight'] = 0.0
-
-            npr.seed(1)
-            w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-                 'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.05,
-                 'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'linear_dssps/weights':   (npr.rand(state_size, output_size) - 0.5) * 5,
-                 'linear_dssps/biases':    ((npr.rand(output_size) - 0.5) * 0.05)}
-
-            m_train = RGNModel('training', c_train)
-            m_eval = RGNModel('evaluation', c_eval)
-
-            m_train.start([m_eval], sess, False)
-            assign_weights(sess, w)
-
-            print(tf.all_variables()[0].get_shape())
-
-            sl_expected = 3.7211139
-            sl_actual = m_eval.evaluate(sess)['secondary_loss']
-            self.assertAllClose(sl_expected, sl_actual, rtol=1e-2, atol=1e-2)
-
-            sa_expected = 0.085174807792468651
-            sa_actual = m_eval.evaluate(sess)['secondary_accuracy']
-            self.assertAllClose(sa_expected, sa_actual, rtol=1e-2, atol=1e-2)
-
-            m_train.finish(sess, save=False, close_session=False, reset_graph=False)  
-
-    def testDSSPPrediction(self):
-        with self.test_session(use_gpu=use_gpu) as sess:
-            output_size = 8
-
-            c_train = deepcopy(c_train_template)
-            c_train.loss['secondary_weight'] = 1.0
-            c_train.loss['tertiary_weight'] = 0.0
-
-            c_eval = deepcopy(c_eval_template)
-            c_eval.loss['secondary_weight'] = 1.0
-            c_eval.loss['tertiary_weight'] = 0.0
-
-            npr.seed(1)
-            w = {'rnn/lstm_cell/kernel':  (npr.rand(input_size + state_size, state_size * 4) - 0.5) * 5,
-                 'rnn/lstm_cell/bias':   (npr.rand(state_size * 4) - 0.5) * 0.05,
-                 'rnn/lstm_cell/w_f_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'rnn/lstm_cell/w_i_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'rnn/lstm_cell/w_o_diag': (npr.rand(state_size) - 0.5) * 5,
-                 'linear_dssps/weights':   (npr.rand(state_size, output_size) - 0.5) * 5,
-                 'linear_dssps/biases':    ((npr.rand(output_size) - 0.5) * 0.05)}
-
-            m_train = RGNModel('training', c_train)
-            m_eval = RGNModel('evaluation', c_eval)
-
-            m_train.start([m_eval], sess, False)
-            assign_weights(sess, w)
-
-            preds_expected = {'1': 'IBLHHHIHGGGGGGGIIIGGGGGGGGGGGGGGGGGGGGGGGGGLGGGGGGGGGGGGGGGGGGGGGGGLLGGGLGGGGGGGGG', '10': 'HHHLLLLLLLLLLLIGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGLGGGGGGGGLG', '15': 'HHGLLLLLLLLSSSGSSSSSSSSBEEBEEEEEEBBELLLSBEBGSSEEEEBBGEBEEEEELEBLLLLLLLLLLE', '17': 'GGHGGGHGLHEEEHGGGHGGGGGGGLHGHHGGGGGLGGGGGGGGGGGGGGGGGGGGGGGGGIGGGGGGGGGGGGGIIHGGLGIGGGGLGGGGGGGGGIE', '25': 'HHGEGGIGGGGGGGGGGGGGGGGGGIGIGGGHHIGEGEGIGGGGGGIGGGIIIIIGGIGIIIIIGGEGGGGGGGGGGGGGGIGEIEIEEG', '27': 'GESSGGGTIBBLLLBLSSSIIBIILLLLLSSSSSSSIISSSSSSSSEBEEBGBSGBSEBBBGGSSSBEEBBGGGBEGGIII', '28': 'GBGHLLLLHHGHHGGGGGGGGGGGGGGGLGGGGGGGLGGGGGGGGGGGGGL', '31': 'SILIILLLLLBLLEBEELLLLLGLLLELLEELEEEEEBBBBBEGGEEEB', '32': 'BGGLGGBLSBGGGGSHLHLGGHHHGLLLLLHLGGGGGHGGGGGGGIGIGGHHLGHHLGHHHHHE', '33': 'BELLLIHHHHHLGLHHGGLLLGHGGGGGLGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGIGGGGGGGGGGGGGGG', '34': 'BGHHGLLHHHHGHSLSGHLLLSIGGIGIGIHIHHIIILLLSBBSIBESBBSSSSSSSSBEEELSBLBBGGEGSBGSSBEEEELBSGGGHHGGGHG', '35': 'HHHIHHIHLLLLILLLLLLGGGLGGGGGGGHGGGGGGEHHGGGGGGGGGGLGGGGGGGGGGGGGGGGGHGGGGIIGGGGGGLGGH', '36': 'GHIIBEGSILGSHGLSSGGSSHHGHIIIILLLLSSSSSSIIIIBILLLLLLLLLSSSLSLLLLGELLBLLLB', '37': 'GLLHLLLLLLLLHLLLLLLLBBLELLLSBLLELLBBLL', '42': 'GIHEITGIGHEHHGGGGGGGGGGGGGGGGGGGGGGLGGLGGGGGLGGGGHGGGGGGGGGGGLGGGGGGGGGGGGGGGG', '43': 'GLGTHIIBBLGSBSSHBGSSSSEGGGSIESIGHHGGGGIGGGGGGGGGGIGHIGIIGGHGGGGHGGGGGGGGGHGGGGGGGGGGGGGGHHHGLGGGLG', '47': 'GLIILILGGGGGGIGGLGGGGGGGGGGGGGGGGIGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGLLGGGGG', '48': 'BBLLHBGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG', '49': 'IBEHHHHHHHHHHHHHHLHHHLHHHHGHHGHHGLHHHLHILGGGGGGGGGGGGGGLGGLLGL', '5': 'HLLLLGGGGGGELGGGGGGGGGGGGGGGGGGGGGGIGLGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG', '51': 'LLLLLLLLGGGGGGGGGGGGGGLGGGGGGGEGGGGGGGGGGGGGGGLL', '52': 'BSGIGGGGIGIHGGHHHLLLGGGGGGGGGGGGGGGGGGGGGGGGGGGGGLGGGGGGGGGGGGGGGGG', '53': 'GHIELHGHGHHGGGGGGHGGGGELEGLGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGLGGGGGELGLLGLLGLGGGGGGGGG', '54': 'EGHGGGGGSHIGITELELHLLLGLLGGGGGGGGGGGGGGGGGGGGLGLGGGGLGGGLGGGGGGGL', '56': 'SLLLSIIBEEEEBGGGGGGGGGGSBSIBBBISGSSSGSGBSSSGBBBSBBSEBEEBLBSSSSBSSSEBLGBBBGGBBBBBBG', '57': 'HHHHHGGHGGHHLLLSGGHGGGGGGGGGGGGGGGGGG'}
-            preds_actual = {id_: dict_['secondary'] for id_, dict_ in m_eval.predict(sess).iteritems()}
-
-            for id_ in preds_expected.iterkeys():
-                self.assertAllEqual(preds_expected[id_], preds_actual[id_])
-
-            m_train.finish(sess, save=False, close_session=False, reset_graph=False)
 
     def testTwoInvocationsZerothOrderLoss(self):
         # values sourced from single invocation runs
@@ -3745,15 +2887,6 @@ class IdiosyncraticTest(tf.test.TestCase):
                     m_train.train(sess)
             finally:
                 m_train.finish(sess, save=False, close_session=False, reset_graph=False) 
-
-    def testRandomness(self):
-        # this test is only there to calibrate the random behavior of the system, i.e to insure two separate systems have the same randomness.
-        with self.test_session(use_gpu=use_gpu) as sess:
-            tf.set_random_seed(1)
-            self.assertAllClose(tf.nn.dropout(tf.constant([1., 1., 1., 1., 1., 1.]), 0.5).eval(),
-                                [ 0.,  0.,  0.,  0.,  2.,  2.])
-            self.assertAllClose(tf.nn.dropout(tf.constant([1., 1., 1., 1., 1., 1.]), 0.5).eval(),
-                                [ 0.,  0.,  2.,  2.,  2.,  0.])
 
 
 # run tests
