@@ -23,12 +23,9 @@ DATAS_DIRNAME = 'data'
 CHECKPOINTS_DIRNAME = 'checkpoints'
 LOGS_DIRNAME = 'logs'
 ALPHABETS_DIRNAME = 'alphabets'
-FULL_TRAINING_DIRNAME     = os.path.join('training',   'full')
-SAMPLE_TRAINING_DIRNAME   = os.path.join('training',   'sample')
-FULL_VALIDATION_DIRNAME   = os.path.join('validation', 'full')   # currently unused
-SAMPLE_VALIDATION_DIRNAME = os.path.join('validation', 'sample')
-FULL_TESTING_DIRNAME      = os.path.join('testing',    'full')   
-SAMPLE_TESTING_DIRNAME    = os.path.join('testing',    'sample') # currently unused
+FULL_TRAINING_DIRNAME     = 'training'
+SAMPLE_VALIDATION_DIRNAME = 'validation'
+FULL_TESTING_DIRNAME      = 'testing'
 TRAINING_OUTPUTS_DIRNAME   = 'outputsTraining'
 VALIDATION_OUTPUTS_DIRNAME = 'outputsValidation'
 TESTING_OUTPUTS_DIRNAME    = 'outputsTesting'
@@ -201,7 +198,7 @@ def loop(args):
 
     # this is all for evaluation models (including training, so training_batch_size is for evaluation)
     full_training_glob     = os.path.join(data_dir, FULL_TRAINING_DIRNAME,     configs['run'].io['full_training_glob'])
-    sample_training_glob   = os.path.join(data_dir, SAMPLE_TRAINING_DIRNAME,   configs['run'].io['sample_training_glob'])
+    sample_training_glob   = os.path.join(data_dir, FULL_TRAINING_DIRNAME,   configs['run'].io['sample_training_glob'])
     training_batch_size    = configs['run'].evaluation['num_training_samples']
     training_invocations   = configs['run'].evaluation['num_training_invocations']
 
