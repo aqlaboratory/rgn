@@ -1,5 +1,9 @@
 """ Configuration classes for geometric network models and runs. """
 
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
+
 from ast import literal_eval
 
 # helper functions
@@ -39,7 +43,7 @@ class Config(object):
         raise NotImplementedError('Abstract method')
 
 class RGNConfig(Config):
-    """Encapsulates configuration parameters for RGN models
+    """Encapsulates configuration parameters for recurrent geometric network models
 
        Options marked with HO indicate that they're completely dependent on higher-order layers being enabled.
        Options marked with pHO indicate that their behavior is partially dependent on higher-order layers.
@@ -67,7 +71,6 @@ class RGNConfig(Config):
         self.computing = {'num_cpus':                             int(config.get('numCPUs',                        4)),
                           'num_recurrent_shards':                 int(config.get('numRecurrentShards',             1)),
                           'num_recurrent_parallel_iters':         int(config.get('numRecurrentParallelIters',      32)),
-                          'num_attention_parallel_iters':         int(config.get('numAttentionParallelIters',      1)),
                           'default_device':                           config.get('defaultDevice',                  ''),
                           'functions_on_devices':         eval_if_str(config.get('functionsOnDevices',             {'/cpu:0': ['point_to_coordinate']})),
                           'gpu_fraction':                       float(config.get('gpuFraction',                    1)),
@@ -86,10 +89,6 @@ class RGNConfig(Config):
                                'recurrent_out_proj_seed':           int_or_none(config.get('recurrentOutProjSeed',          None)),
                                'recurrent_nonlinear_out_proj_init': eval_if_str(config.get('recurrentNonlinearOutProjInit', {'base': {}, 'bias': {}})),
                                'recurrent_nonlinear_out_proj_seed': int_or_none(config.get('recurrentNonlinearOutProjSeed', None)),
-                               'recurrent_attention_init':          eval_if_str(config.get('recurrentAttentionInit',        {'in_proj': {}, 'out_proj': {}, 'attn_mlp': {}})),
-                               'recurrent_attention_seed':          int_or_none(config.get('recurrentAttentionSeed',        None)),
-                               'attention_init':                    eval_if_str(config.get('attentionInit',                 {'base': {}, 'bias': {}})),
-                               'attention_seed':                    int_or_none(config.get('attentionSeed',                 None)),
                                'alphabet_init':                     eval_if_str(config.get('alphabetInit',                  {})),
                                'alphabet_seed':                     int_or_none(config.get('alphabetSeed',                  None)),
                                'queue_seed':                        int_or_none(config.get('queueSeed',                     None)),
@@ -142,21 +141,12 @@ class RGNConfig(Config):
                              'bidirectional':                            str_or_bool(config.get('bidirectional',                        False)), # pHO
                              'higher_order_layers':                      str_or_bool(config.get('higherOrderLayers',                    False)),
                              'include_recurrent_outputs_between_layers': str_or_bool(config.get('includeRecurrentOutputsBetweenLayers', True)), # HO
-                             'include_dssps_between_layers':             str_or_bool(config.get('includeDSSPsBetweenLayers',            False)), # HO
                              'include_dihedrals_between_layers':         str_or_bool(config.get('includeDihedralsBetweenLayers',        False)), # HO
                              'residual_connections_every_n_layers':      int_or_none(config.get('residualConnectionsEveryNLayers',      None)), # HO
                              'first_residual_connection_from_nth_layer': int_or_none(config.get('firstResidualConnectionFromNthLayer',  1)), # HO
                              'recurrent_to_output_skip_connections':     str_or_bool(config.get('recurrentToOutputSkipConnections',     False)), # HO
                              'input_to_recurrent_skip_connections':      str_or_bool(config.get('inputToRecurrentSkipConnections',      False)), # HO
                              'all_to_recurrent_skip_connections':        str_or_bool(config.get('allToRecurrentSkipConnections',        False)), # HO
-                             'attention':                                eval_if_str(config.get('attention',                            False)), # HO
-                             'attention_mlp_size':                       eval_if_str(config.get('attentionMLPSize',                     None)), # HO
-                             'recurrent_attention':                      eval_if_str(config.get('recurrentAttention',                   False)),
-                             'recurrent_attention_length':               eval_if_str(config.get('recurrentAttentionLength',             None)),
-                             'recurrent_attention_output_proj_size':     eval_if_str(config.get('recurrentAttentionOutputProjSize',     None)),
-                             'recurrent_attention_mlp_size':             eval_if_str(config.get('recurrentAttentionMLPSize',            None)),
-                             'recurrent_attention_input_proj':           eval_if_str(config.get('recurrentAttentionInputProj',          False)),
-                             'recurrent_attention_input_proj_size':      eval_if_str(config.get('recurrentAttentionInputProjSize',      None)),
                              'recurrent_nonlinear_out_proj_size':        eval_if_str(config.get('recurrentNonlinearOutputProjSize',     None)),
                              'recurrent_nonlinear_out_proj_function':                config.get('recurrentNonlinearOutputProjFunction', 'tanh'),
                              'tertiary_output':                                      config.get('tertiaryOutput',                       'linear'),
@@ -174,19 +164,12 @@ class RGNConfig(Config):
                                'alphabet_keep_probability':                  eval_if_str(config.get('alphabetKeepProb',                   1.0)), # pHO
                                'alphabet_normalization':                     str_or_none(config.get('alphabetNormalization',              None)), # pHO
                                'recurrent_nonlinear_out_proj_normalization': str_or_none(config.get('recurNonlinearOutProjNormalization', None)),
-                               'recurrent_output_batch_normalization':       eval_if_str(config.get('recurOutBatchNormalization',         False)), # HO
-                               'input_batch_normalization':                  str_or_bool(config.get('inputBatchNormalization',            False)),
-                               'recurrent_state_batch_normalization_decay':        float(config.get('recurStateBatchNormalizationDecay',  0.999)),
-                               'recurrent_output_layer_normalization':       eval_if_str(config.get('recurOutLayerNormalization',         False)), # HO
-                               'input_layer_normalization':                  str_or_bool(config.get('inputLayerNormalization',            False)),
                                'recurrent_layer_normalization':              str_or_bool(config.get('recurLayerNormalization',            False)), # LNLSTM
                                'recurrent_variational_dropout':              str_or_bool(config.get('recurVariationalDropout',            False))}
 
         # loss
         self.loss = {'include':                       str_or_bool(config.get('includeLoss',                 True)),
-                     'secondary_weight':                    float(config.get('secondaryWeight',             0.0)),
                      'tertiary_weight':                     float(config.get('tertiaryWeight',              1.0)),
-                     'secondary_normalization':                   config.get('secondaryNormalization',      'zeroth'),
                      'tertiary_normalization':                    config.get('tertiaryNormalization',       'zeroth'),
                      'batch_dependent_normalization': str_or_bool(config.get('batchDependentNormalization', True)),
                      'atoms':                                     config.get('lossAtoms',                   'c_alpha')}
@@ -245,9 +228,7 @@ class RunConfig(Config):
                            'include_diagnostics':           str_or_bool(config.get('includeDiagnostics',                    True))}
 
         # loss
-        self.loss = {'training_secondary_normalization':         config.get('trainingSecondaryNormalization',        'first'), # 'training' here is in the learning
-                     'evaluation_secondary_normalization':       config.get('evaluationSecondaryNormalization',      'first'), # sense, not evaluation
-                     'training_tertiary_normalization':          config.get('trainingTertiaryNormalization',         'first'),
+        self.loss = {'training_tertiary_normalization':          config.get('trainingTertiaryNormalization',         'first'),
                      'evaluation_tertiary_normalization':        config.get('evaluationTertiaryNormalization',       'first'),
                      'training_batch_dependent_normalization':   config.get('trainingBatchDependentNormalization',   True),
                      'evaluation_batch_dependent_normalization': config.get('evaluationBatchDependentNormalization', True)}
