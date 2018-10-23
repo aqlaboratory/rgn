@@ -15,6 +15,10 @@
     interface of tensorflow.models.rnn.rnn, which expects NUM_STEPS x [BATCH_SIZE, NUM_AAS].
 """
 
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
+
 # Imports
 import numpy as np
 import tensorflow as tf
