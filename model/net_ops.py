@@ -1,7 +1,7 @@
 """ Neural Network TensorFlow operations for protein structure prediction.
 
     In general this module contains functions for constructing different parts
-    of RGNModel networks, excepting ones related to geometric operations.
+    of GeomNetModel networks, excepting ones related to geometric operations.
 
     There are some conventions used throughout this module. First, most functions
     accept some combination of TF tensors and regular python objects. Since all
@@ -15,6 +15,10 @@
     intended behavior is what's described.
 """
 
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
+
 # Imports
 import numpy as np
 import tensorflow as tf
@@ -27,7 +31,7 @@ NUM_DIHEDRALS = 3
 ### Public functions
 # These functions expose a public interface that properly encapsulates their internals
 # using tensorflow scoping operations and such. While they are primarily used by the
-# RGNModel, they may also have general utility beyond it. All these functions
+# GeomNetModel, they may also have general utility beyond it. All these functions
 # are strictly stateless, possessing no internal TF variables.
 
 def masking_matrix(mask, name=None):
