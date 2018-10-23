@@ -1,3 +1,7 @@
+__author__ = "Mohammed AlQuraishi"
+__copyright__ = "Copyright 2018, Harvard Medical School"
+__license__ = "MIT"
+
 import numpy as np
 import tensorflow as tf
 from ast import literal_eval
