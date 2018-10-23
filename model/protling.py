@@ -14,7 +14,7 @@ from glob import glob
 from shutil import rmtree
 from pprint import pprint
 from setproctitle import setproctitle
-from rgn_model import RGNModel
+from model import RGNModel
 from config import RGNConfig, RunConfig
 
 # constant directory and file names
@@ -56,8 +56,8 @@ def evaluate_and_log(log_file, configs, models, session):
         diagnostics = {k: float('nan') for k in ('min_weight', 'max_weight', 'min_grad', 'max_grad', 
                                                  'curriculum_step', 'curriculum_quantiles')}
 
-    # Retrieve the correct loss. Currently the presence of tertiary loss trumps secondary, when in fact both could co-exist (see below too)
-    for loss_key in ['tertiary_loss_all', 'secondary_accuracy_all']:
+    # Retrieve the correct loss.
+    for loss_key in ['tertiary_loss_all']:
         if loss_key in wt_train_loss_dict:
             wt_train_loss = wt_train_loss_dict[loss_key]
             break
@@ -66,7 +66,7 @@ def evaluate_and_log(log_file, configs, models, session):
 
     if configs['run'].evaluation['include_weighted_validation']:
         wt_val_loss = {}
-        for loss_type in ['tertiary_loss', 'secondary_accuracy', 'min_tertiary_loss_achieved']:
+        for loss_type in ['tertiary_loss', 'min_tertiary_loss_achieved']:
             for subgroup in ['all'] + configs['eval_wt_val'].io['evaluation_sub_groups']:
                 loss_key = loss_type + '_' + subgroup
                 wt_val_loss.update({loss_key: wt_val_loss_dict.get(loss_key, float('nan'))})
@@ -76,7 +76,7 @@ def evaluate_and_log(log_file, configs, models, session):
         wt_val_loss = {'tertiary_loss_all': float('nan')}
         wt_val_loss_subgroups_string = '' 
 
-    for loss_key in ['tertiary_loss_all', 'secondary_accuracy_all']:
+    for loss_key in ['tertiary_loss_all']:
         if loss_key in wt_test_loss_dict:
             wt_test_loss  = wt_test_loss_dict[loss_key]
             break
@@ -99,8 +99,8 @@ def evaluate_and_log(log_file, configs, models, session):
         unwt_val_loss_dict   = models['eval_unwt_val'].evaluate(session)   if configs['run'].evaluation['include_unweighted_validation'] else {}
         unwt_test_loss_dict  = models['eval_unwt_test'].evaluate(session)  if configs['run'].evaluation['include_unweighted_testing']    else {}
 
-        # Retrieve the correct loss. Currently the presence of tertiary loss trumps secondary, when in reality both could co-exist.
-        for loss_key in ['tertiary_loss_all', 'secondary_accuracy_all']:
+        # Retrieve the correct loss.
+        for loss_key in ['tertiary_loss_all']:
             if loss_key in unwt_train_loss_dict:
                 unwt_train_loss = unwt_train_loss_dict[loss_key]
                 break
@@ -109,7 +109,7 @@ def evaluate_and_log(log_file, configs, models, session):
 
         if configs['run'].evaluation['include_unweighted_validation']:
             unwt_val_loss = {}
-            for loss_type in ['tertiary_loss', 'secondary_accuracy', 'min_tertiary_loss_achieved']:
+            for loss_type in ['tertiary_loss', 'min_tertiary_loss_achieved']:
                 for subgroup in ['all'] + configs['eval_unwt_val'].io['evaluation_sub_groups']:
                     loss_key = loss_type + '_' + subgroup
                     unwt_val_loss.update({loss_key: unwt_val_loss_dict.get(loss_key, float('nan'))})
@@ -119,7 +119,7 @@ def evaluate_and_log(log_file, configs, models, session):
             unwt_val_loss = {'tertiary_loss_all': float('nan')}
             unwt_val_loss_subgroups_string = ''
 
-        for loss_key in ['tertiary_loss_all', 'secondary_accuracy_all']:
+        for loss_key in ['tertiary_loss_all']:
             if loss_key in unwt_test_loss_dict:
                 unwt_test_loss   = unwt_test_loss_dict[loss_key]
                 break
@@ -175,10 +175,10 @@ def predict_and_log(log_dir, configs, models, session):
                 for _ in range(configs[label].queueing['num_evaluation_invocations']):
                     dicts = model.predict(session)
                     for idx, dict_ in dicts.iteritems():
-                        if 'secondary' in dict_:
-                            with open(os.path.join(outputs_dir, idx + '.secondary'), 'w') as f: f.write(dict_['secondary'])
                         if 'tertiary'  in dict_:
                             np.savetxt(os.path.join(outputs_dir, idx + '.tertiary'), dict_['tertiary'], header='\n')
+                        if 'recurrent_states' in dict_:
+                            np.savetxt(os.path.join(outputs_dir, idx + '.recurrent_states'), dict_['recurrent_states'])
 
 def loop(args):
     # create config and model collection objects, and retrieve the run config
@@ -253,7 +253,6 @@ def loop(args):
                                            'batchQueueCapacity':          configs['run'].queueing['training_batch_queue_capacity'],
                                            'minAfterDequeue':             configs['run'].queueing['training_min_after_dequeue'],
                                            'shuffle':                     configs['run'].queueing['training_shuffle'],
-                                           'secondaryNormalization':      configs['run'].loss['training_secondary_normalization'],
                                            'tertiaryNormalization':       configs['run'].loss['training_tertiary_normalization'],
                                            'batchDependentNormalization': configs['run'].loss['training_batch_dependent_normalization'],
                                            'alphabetFile':                alphabet_file,
@@ -266,7 +265,6 @@ def loop(args):
                                              'batchQueueCapacity':          configs['run'].queueing['evaluation_batch_queue_capacity'],
                                              'minAfterDequeue':             configs['run'].queueing['evaluation_min_after_dequeue'],
                                              'shuffle':                     configs['run'].queueing['evaluation_shuffle'],
-                                             'secondaryNormalization':      configs['run'].loss['evaluation_secondary_normalization'],
                                              'tertiaryNormalization':       configs['run'].loss['evaluation_tertiary_normalization'],
                                              'batchDependentNormalization': configs['run'].loss['evaluation_batch_dependent_normalization'],
                                              'alphabetFile':                alphabet_file,
