@@ -17,7 +17,7 @@ Where the first path points to the configuration file and the second path to the
 Training of a new model can then be invoked by calling:
 
 ```
-protling.py [configurationFilePath] -d [baseDirectory]
+python protling.py [configurationFilePath] -d [baseDirectory]
 ```
 
 Download a pre-trained model for an example of a correctly defined directory structure. Note that ProteinNet training sets come in multiple "thinnings" and only one should be used at a time by placing it in the main training directory.
@@ -28,7 +28,7 @@ To resume training an existing model, run the command above for a previously tra
 To predict the structure of a new protein using an existing model with a saved checkpoint, call:
 
 ```
-protling.py [configFilePath] -d [baseDirectory] -p
+python protling.py [configFilePath] -d [baseDirectory] -p
 ```
 
 This predicts the structures of the dataset specified in the configuration file. By default only the validation set is predicted, but this can be changed using the `-e` option.
@@ -40,3 +40,6 @@ Below we make available pre-trained RGN models using the [ProteinNet](https://gi
 | --- | --- | --- | --- | --- | --- |
 
 To train new models from scratch using the same hyperparameter choices as the above models, use the appropriate configuration file from [here](https://github.com/aqlaboratory/rgn/tree/master/configurations).
+
+## Reference
+[End-to-end differentiable learning of protein structure, bioRxiv 2018](https://www.biorxiv.org/content/early/2018/08/29/265231)
