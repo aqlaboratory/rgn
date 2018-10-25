@@ -1,5 +1,12 @@
 # Recurrent Geometric Networks
-This is the reference (TensorFlow) implementation of recurrent geometric networks (RGNs), described in the paper [End-to-end differentiable learning of protein structure](https://www.biorxiv.org/content/early/2018/08/29/265231). It has been tested on TF versions 1.4 through 1.12.
+This is the reference (TensorFlow) implementation of recurrent geometric networks (RGNs), described in the paper [End-to-end differentiable learning of protein structure](https://www.biorxiv.org/content/early/2018/08/29/265231). 
+
+## Installation and requirements
+Extract all files in the [model](https://github.com/aqlaboratory/rgn/tree/master/model) directory in a single location and use `protling.py`, described further below, to train new models and predict structures. Below are the language requirements and package dependencies:
+
+* Python 2.7
+* TensorFlow >= 1.4 (tested up to 1.12)
+* setproctitle
 
 ## Usage
 The [`protling.py`](https://github.com/aqlaboratory/rgn/blob/master/model/protling.py) script facilities training of and prediction using RGN models. Below are typical use cases. The script also accepts a number of command-line options whose functionality can be queried using the `--help` option.
