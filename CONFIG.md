@@ -96,18 +96,6 @@ Many initialization options accept an initialization dictionary of the form `{'b
 | alphabetInit | initialization spec | initialization scheme for alphabet |
 | recurrentForgetBias | real | initial value of forget bias in LSTM units |
 
-## Curriculum
-| Option Name | Acceptable Values | Description |
-| --- | --- | --- |
-| currMode | loss, length | curriculum mode |
-| currBehavior | fixed_rate, loss_threshold, loss_change | curriculum behavior |
-| currSlope | real | curriculum slope |
-| currBase | real | curriculum base |
-| currRate | real | curriculum rate |
-| currThreshold | real | curriculum threshold |
-| currSharpness | real | curriculum sharpness |
-| currChangeNumIters | integer | curriculum change every number of iterations |
-
 ## Compute
 Additional compute-related options can be specified as command-line options to `protling.py`.
 
