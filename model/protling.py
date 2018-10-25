@@ -219,6 +219,7 @@ def loop(args):
 
     # redirect stdout/err to file
     sys.stderr.flush()
+    if not os.path.exists(os.path.dirname(stdout_err_file)): os.makedirs(os.path.dirname(stdout_err_file))
     stdout_err_file_handle = open(stdout_err_file, 'w')
     os.dup2(stdout_err_file_handle.fileno(), sys.stderr.fileno())
     sys.stdout = stdout_err_file_handle
