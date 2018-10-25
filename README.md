@@ -34,7 +34,7 @@ python protling.py [configFilePath] -d [baseDirectory] -p
 This predicts the structures of the dataset specified in the configuration file. By default only the validation set is predicted, but this can be changed using the `-e` option.
 
 ## Pre-trained models
-Below we make available pre-trained RGN models using the [ProteinNet](https://github.com/aqlaboratory/proteinnet) 7 - 12 datasets as checkpointed TF graphs. These models are identical to the ones used in reporting results in the [bioRxiv preprint](https://www.biorxiv.org/content/early/2018/08/29/265231), except for the CASP 11 model which is slightly different due to upgrading to a newer codebase.
+Below we make available pre-trained RGN models using the [ProteinNet](https://github.com/aqlaboratory/proteinnet) 7 - 12 datasets as checkpointed TF graphs. These models are identical to the ones used in reporting results in the [bioRxiv preprint](https://www.biorxiv.org/content/early/2018/08/29/265231), except for the CASP 11 model which is slightly different due to using a newer codebase.
 
 | [CASP7](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN7.tar.gz) | [CASP8](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN8.tar.gz) | [CASP9](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN9.tar.gz) | [CASP10](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN10.tar.gz) | [CASP11](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN11.tar.gz) | [CASP12](https://sharehost.hms.harvard.edu/sysbio/alquraishi/rgn_models/RGN12.tar.gz) |
 | --- | --- | --- | --- | --- | --- |
