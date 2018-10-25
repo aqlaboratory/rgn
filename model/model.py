@@ -131,17 +131,17 @@ class RGNModel(object):
             the one with the reuse=None semantics. Ops however are specific to each model type and
             so some ops are missing from the training model and vice-versa.
 
-            Almost graph construction is done in this function, which relies on a number of private
-            methods to do the actual construction. Methods internal to this class are ad hoc and thus
-            not meant for general use--general methods are placed in separate *_ops python modules.
-            Some parts of graph construction, namely summary ops, are done in the start method, to
-            insure that all models have been created.
+            Almost all graph construction is done in this function, which relies on a number of 
+            private methods to do the actual construction. Methods internal to this class are ad hoc 
+            and thus not meant for general use--general methods are placed in separate *_ops python 
+            modules. Some parts of graph construction, namely summary ops, are done in the start 
+            method, to ensure that all models have been created.
 
             There are two types of internal (private, prefaced with _) variables stored in each
             object. One are ops collections, like training_ops, evaluation_ops, etc. These are lists 
-            of ops that are run when the similarly name object method is called. As the graph is 
-            built up, ops are added to these lists. The second type of variable are various nodes
-            that are like TF methods, like the initializer, saver, etc, which are stored in the
+            of ops that are run when the similarly named object method is called. As the graph is 
+            built up, ops are added to these lists. The second type of variables are various nodes
+            that are like TF methods, e.g. the initializer, saver, etc, which are stored in the
             object and are accessed by various methods when necessary.
         """
 
