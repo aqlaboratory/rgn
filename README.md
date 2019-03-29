@@ -48,5 +48,8 @@ Below we make available pre-trained RGN models using the [ProteinNet](https://gi
 
 To train new models from scratch using the same hyperparameter choices as the above models, use the appropriate configuration file from [here](https://github.com/aqlaboratory/rgn/tree/master/configurations).
 
+## PyTorch implementation
+The reference RGN implementation is currently only available in TensorFlow, however the [OpenProtein](https://github.com/OpenProtein/openprotein) project has implementations of various aspects of the RGN model in PyTorch.
+
 ## Reference
 [End-to-end differentiable learning of protein structure, bioRxiv 2018](https://www.biorxiv.org/content/early/2018/08/29/265231)
