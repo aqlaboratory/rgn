@@ -52,4 +52,4 @@ To train new models from scratch using the same hyperparameter choices as the ab
 The reference RGN implementation is currently only available in TensorFlow, however the [OpenProtein](https://github.com/OpenProtein/openprotein) project has implementations of various aspects of the RGN model in PyTorch.
 
 ## Reference
-[End-to-end differentiable learning of protein structure, bioRxiv 2018](https://www.biorxiv.org/content/early/2018/08/29/265231)
+[End-to-end differentiable learning of protein structure, Cell Systems 2019](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30076-6)
