@@ -117,7 +117,7 @@ def reduce_l1_norm(input_tensor, reduction_indices=None, keep_dims=None, weights
         return tf.reduce_sum(input_tensor, axis=reduction_indices, keep_dims=keep_dims, name=scope)
 
 def dihedral_to_point(dihedral, r=BOND_LENGTHS, theta=BOND_ANGLES, name=None):
-    """ Takes triplets of dihedral angles (phi, psi, omega) and returns 3D points ready for use in
+    """ Takes triplets of dihedral angles (omega, phi, psi) and returns 3D points ready for use in
         reconstruction of coordinates. Bond lengths and angles are based on idealized averages.
 
     Args:
@@ -152,7 +152,8 @@ def point_to_coordinate(pt, num_fragments=6, parallel_iterations=4, swap_memory=
 
         Reconstruction is done in parallel, by independently reconstructing num_fragments fragments and then 
         reconstituting the chain at the end in reverse order. The core reconstruction algorithm is NeRF, based on 
-        DOI: 10.1002/jcc.20237 by Parsons et al. 2005. The parallelized version is described in XXX.
+        DOI: 10.1002/jcc.20237 by Parsons et al. 2005. The parallelized pNERF version is described in 
+        DOI: 10.1002/jcc.25772 by AlQuraishi 2019.
 
     Args:
         pt: [NUM_STEPS x NUM_DIHEDRALS, BATCH_SIZE, NUM_DIMENSIONS]
