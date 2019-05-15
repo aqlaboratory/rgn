@@ -20,7 +20,7 @@ _bytes_feature = lambda v: _feature(bytes_list=tf.train.BytesList(value=v))
 _int64_feature = lambda v: _feature(int64_list=tf.train.Int64List(value=v))
 _float_feature = lambda v: _feature(float_list=tf.train.FloatList(value=v))
 
-# Functions for conversion from Mathematica protein files to TFRecords
+# Functions for conversion from Text-based ProteinNet files to TFRecords
 _aa_dict = {'A': '0', 'C': '1', 'D': '2', 'E': '3', 'F': '4', 'G': '5', 'H': '6', 'I': '7', 'K': '8', 'L': '9', 'M': '10', 'N': '11', 'P': '12', 'Q': '13', 'R': '14', 'S': '15', 'T': '16', 'V': '17', 'W': '18', 'Y': '19'}
 _dssp_dict = {'L': '0', 'H': '1', 'B': '2', 'E': '3', 'G': '4', 'I': '5', 'T': '6', 'S': '7'}
 _mask_dict = {'-': '0', '+': '1'}
