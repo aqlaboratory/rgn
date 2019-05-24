@@ -6,7 +6,7 @@ import sys
 if __name__ == '__main__':
 	stem = sys.argv[1]
 
-	i_fa = open(stem + '.fa', 'r')
+	i_fa = open(stem, 'r')
 	name = i_fa.readline()[1:]
 	seq  = i_fa.readline() + '\n'
 	header = '[ID]\n' + name + '[PRIMARY]\n' + seq + '[EVOLUTIONARY]'
