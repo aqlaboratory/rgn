@@ -32,7 +32,7 @@ Download a pre-trained model for an example of a correctly defined directory str
 To resume training an existing model, run the command above for a previously trained model with saved checkpoints.
 
 ### Predict sequences in ProteinNet TFRecords format using a trained model
-To predict the structures of proteins already in ProteinNet TFRecords format using an existing model with a saved checkpoint, call:
+To predict the structures of proteins already in ProteinNet `TFRecord` format using an existing model with a saved checkpoint, call:
 
 ```
 python protling.py <configFilePath> -d <baseDirectory> -p
