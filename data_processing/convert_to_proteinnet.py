@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
 	i_fa = open(stem, 'r')
 	name = i_fa.readline()[1:]
-	seq  = i_fa.readline() + '\n'
+	seq  = "".join([line.strip() for line in i_fa.readlines()]) + '\n'
 	header = '[ID]\n' + name + '[PRIMARY]\n' + seq + '[EVOLUTIONARY]'
 	i_fa.close()
 
