@@ -4,7 +4,6 @@
 import sys
 import re
 import tensorflow as tf
-from utils import switch
 
 # Constants
 NUM_DIMENSIONS = 3
@@ -24,6 +23,28 @@ _float_feature = lambda v: _feature(float_list=tf.train.FloatList(value=v))
 _aa_dict = {'A': '0', 'C': '1', 'D': '2', 'E': '3', 'F': '4', 'G': '5', 'H': '6', 'I': '7', 'K': '8', 'L': '9', 'M': '10', 'N': '11', 'P': '12', 'Q': '13', 'R': '14', 'S': '15', 'T': '16', 'V': '17', 'W': '18', 'Y': '19'}
 _dssp_dict = {'L': '0', 'H': '1', 'B': '2', 'E': '3', 'G': '4', 'I': '5', 'T': '6', 'S': '7'}
 _mask_dict = {'-': '0', '+': '1'}
+
+class switch(object):
+    """Switch statement for Python, based on recipe from Python Cookbook."""
+
+    def __init__(self, value):
+        self.value = value
+        self.fall = False
+
+    def __iter__(self):
+        """Return the match method once, then stop"""
+        yield self.match
+        raise StopIteration
+    
+    def match(self, *args):
+        """Indicate whether or not to enter a case suite"""
+        if self.fall or not args:
+            return True
+        elif self.value in args: # changed for v1.5
+            self.fall = True
+            return True
+        else:
+            return False
 
 def letter_to_num(string, dict_):
     """ Convert string of letters to list of ints """
