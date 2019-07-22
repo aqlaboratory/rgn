@@ -68,3 +68,6 @@ The reference RGN implementation is currently only available in TensorFlow, howe
 
 ## Reference
 [End-to-end differentiable learning of protein structure, Cell Systems 2019](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30076-6)
+
+## Funding
+This work was supported by NIGMS grant P50GM107618 and NCI grant U54-CA225088.
