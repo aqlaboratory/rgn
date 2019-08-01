@@ -35,10 +35,10 @@ To resume training an existing model, run the command above for a previously tra
 To predict the structures of proteins already in ProteinNet `TFRecord` format using an existing model with a saved checkpoint, call:
 
 ```
-python protling.py <configFilePath> -d <baseDirectory> -p
+python protling.py <configFilePath> -d <baseDirectory> -p -g0
 ```
 
-This predicts the structures of the dataset specified in the configuration file. By default only the validation set is predicted, but this can be changed using the `-e` option, e.g. `-e weighted_testing` to predict the test set.
+This predicts the structures of the dataset specified in the configuration file. By default only the validation set is predicted, but this can be changed using the `-e` option, e.g. `-e weighted_testing` to predict the test set. The `-g0` option sets the GPU to be used to the one with index 0. If a different GPU is available change the setting appropriately.
 
 ### Predict structure of a single new sequence using a trained model
 If all you have is a single sequence for which you wish to make a prediction, there are multiple steps that must be performed. First, a PSSM needs to be created by running JackHMMer (or a similar tool) against a sequence database, the resulting PSSM must be combined with the sequence in a ProteinNet record, and the file must be converted to the `TFRecord` format. Predictions can then be made as previously described.
@@ -50,10 +50,10 @@ jackhmmer.sh <sequenceFile> <fastaDatabase>
 python convert_to_proteinnet.py <sequenceFile>
 python convert_to_tfrecord.py <sequenceFile>.proteinnet <sequenceFile>.tfrecord 42
 cp <sequenceFile>.tfrecord <baseDirectory>/data/<datasetName>/testing/
-python protling.py <baseDirectory>/runs/<runName>/<datasetName>/<configurationFile> -d <baseDirectory> -p -e weighted_testing
+python protling.py <baseDirectory>/runs/<runName>/<datasetName>/<configurationFile> -d <baseDirectory> -p -e weighted_testing -g0
 ```
 
-The first line searches the supplied database for matches to the supplied sequence and extracts a PSSM out of the results. It will generate multiple new files. These are then used in the second line to construct a text-based ProteinNet file (with 42 entries per evolutionary profile, compatible with the pre-trained RGN models). The third line converts the file to `TFRecords` format, and the fourth line copies the file to the testing directory of a pre-trained model. Finally the fifth line predicts the structure using the pre-trained RGN model. The outputs will be placed in  `<baseDirectory>/runs/<runName>/<datasetName>/<latestIterationNumber>/outputsTesting/` and will be comprised of two files: a `.tertiary` file which contains the atomic coordinates, and `.recurrent_states` file which contains the RGN latent representation of the sequence.
+The first line searches the supplied database for matches to the supplied sequence and extracts a PSSM out of the results. It will generate multiple new files. These are then used in the second line to construct a text-based ProteinNet file (with 42 entries per evolutionary profile, compatible with the pre-trained RGN models). The third line converts the file to `TFRecords` format, and the fourth line copies the file to the testing directory of a pre-trained model. Finally the fifth line predicts the structure using the pre-trained RGN model. The outputs will be placed in  `<baseDirectory>/runs/<runName>/<datasetName>/<latestIterationNumber>/outputsTesting/` and will be comprised of two files: a `.tertiary` file which contains the atomic coordinates, and `.recurrent_states` file which contains the RGN latent representation of the sequence. The `-g0` option sets the GPU to be used to the one with index 0. If a different GPU is available change the setting appropriately.
 
 ## Pre-trained models
 Below we make available pre-trained RGN models using the [ProteinNet](https://github.com/aqlaboratory/proteinnet) 7 - 12 datasets as checkpointed TF graphs. These models are identical to the ones used in reporting results in the [_Cell Systems_ paper](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30076-6), except for the CASP 11 model which is slightly different due to using a newer codebase.
